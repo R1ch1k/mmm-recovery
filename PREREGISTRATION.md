@@ -301,6 +301,111 @@ follow-up study.
 
 ## 11. Deviations log
 
-| Date | Change | Reason |
-|---|---|---|
-| — | none yet | — |
+All entries dated. Each records a decision made after this document was first committed,
+the reason, and whether it tightens, loosens, or merely specifies the study.
+
+### D1 — 2026-08-05 — C6 placebo correlation reduced to 0.6 and given levels
+
+**Specified.** §5 required the placebo to correlate 0.8 with both search spend and the
+seasonal term. That is jointly impossible: the 3×3 correlation matrix for
+(placebo, search, season) with two 0.8 off-diagonals is not positive semi-definite unless
+search and season themselves correlate at least 0.28. Confirmed by eigenvalue check.
+
+Two fixes were available. Requiring a search↔season correlation was rejected because it
+moves two knobs at once and breaks the one-knob-at-a-time design that makes C6 comparable
+to C0.
+
+C6 now uses equal targets against search and season at levels **0.3, 0.45, 0.6**, with
+search↔season left at its C0 value. The ceiling for equal targets under uncorrelated
+search and season is 1/√2 ≈ 0.707, so 0.6 keeps a feasibility margin. Adding levels turns
+a point estimate into a dose-response curve on the placebo flag rate, which is strictly
+more informative than the original single condition.
+
+**Effect on §8:** the C6 prediction (flag rate above 30%) was written against an infeasible
+specification. It is retained unchanged and now applies to the 0.6 level. Confidence in it
+is lower than when written, and that is recorded rather than corrected.
+
+### D2 — 2026-08-05 — Logistic saturation scale fixed at s_c = κ_c / 4
+
+**Specified.** §2 named the logistic form but never gave s, which alone determines whether
+C4's misspecification is severe or cosmetic. s_c = κ_c/4 gives a full S-curve across
+[0, 2κ] and reuses the existing Hill κ column, so no new parameters enter.
+
+It also keeps the optimiser out of trouble. `expit` returns exactly 1.0 in float64 once its
+argument exceeds roughly 36.7, so a logistic with too small an s contains a genuinely flat,
+zero-gradient plateau. At s = κ/4 that plateau begins far above the largest spend any
+channel reaches at the optimiser's upper bound m_c = 3. `truth.py` must assert this rather
+than assume it.
+
+### D3 — 2026-08-05 — Logistic saturation is zero-anchored
+
+**Corrected.** As literally specified, g(0) = 1/(1 + exp(κ/s)) > 0, so every channel would
+emit sales at zero spend — 1.8% of β at s = κ/4, about £3.96k/week for TV. The offset
+cancels in the intervention difference of §3 but corrupts the 25% media-share calibration
+and the baseline, and contradicts the 0 → 0 requirement in CLAUDE.md.
+
+Saturation is now `(g(x) − g(0)) / (1 − g(0))`, which maps 0 → 0, preserves the range
+[0, 1], and keeps the S-shape. This matters for what C4 tests: the intended
+misspecification is curve *shape*, and an additive offset would have made C4 measure two
+different things at once.
+
+### D4 — 2026-08-05 — β is fixed at the §2 table for every condition
+
+**Specified.** The 25% media-share target is a property of C0 only, asserted in C0's tests
+and nowhere else. Recalibrating β per condition to hold the share would make ground truth
+condition-dependent and confound every cross-condition comparison — C1 against C4 would
+stop being comparable.
+
+Media share will therefore drift: upward under C3, where spend rises with demand, and by an
+unknown amount under C4, where the transforms differ. That drift is expected, reported per
+condition as a descriptive statistic, and not corrected.
+
+### D5 — 2026-08-05 — ρ targets spend levels, with a stated tolerance
+
+**Specified.** §2 did not say whether ρ applies to levels or logs. Levels, because that is
+what a practitioner computes and what "channels move together" means operationally; for
+log-normal spend the two differ materially, so ρ = 0.95 would otherwise describe two
+different datasets.
+
+Equal pairwise ρ across all pairs is not attainable with unequal channel volatilities. The
+shared-factor weight is solved numerically per condition against the target, and the
+generator asserts **mean pairwise Pearson ρ on levels within ±0.02 of target, with no
+individual pair further than ±0.10 from it**.
+
+### D6 — 2026-08-05 — Placebo excluded from G1, G2 and G3; evaluated only by G6
+
+**Specified, with a small loosening recorded honestly.** Relative bias is undefined for the
+placebo, whose true contribution is exactly zero. G1–G3 are computed over the five real
+channels only.
+
+This has a side effect on G3 that is stated here rather than discovered later. Spearman on
+five channels takes 21 distinct values and 0.80 is exactly one of them; on six it is not,
+and the effective threshold would have been 0.8286. Excluding the placebo therefore makes
+G3 marginally easier than the six-channel reading. The exclusion is justified independently
+— the placebo has no defined bias and has its own dedicated gate — but the direction of the
+effect is a loosening and is logged as one.
+
+For coherence: for the placebo, the G6 flag rate is exactly one minus the G2-style coverage
+of the true value zero. The two are the same measurement, which is a useful internal
+consistency check.
+
+### D7 — 2026-08-05 — Two descriptive metrics added; no gate changed
+
+**Neither tightens nor loosens.** Both are reported alongside the gates; neither is one.
+
+1. **Fraction of channel pairs correctly ordered** by estimated contribution. Spearman on
+   five channels is coarse; this reads more finely and is easier to explain to a
+   non-technical reader. G3's threshold is unchanged.
+2. **Placebo spend reduction relative to status quo.** The status quo already routes
+   15/148 = 10.14% of budget to the placebo, so G6's ≤ 2% gate demands roughly an 80% cut
+   rather than mere restraint. The gate is intentionally that demanding — the correct answer
+   is zero — and is unchanged. The reduction ratio is the version a marketing reader
+   understands.
+
+### D8 — 2026-08-05 — Geometric adstock normalisation confirmed
+
+**No change; recording the reading.** The recursion in §2 has kernel λ^k summing to
+1/(1−λ), so unit-sum normalisation is a scaling by (1−λ), implemented as
+x̃_t = (1−λ)·x_t + λ·x̃_{t−1}. This is the Meridian convention rather than Robyn's
+unnormalised form, and it is the right one here: without normalisation a larger λ inflates
+the adstocked signal and confounds λ with β.
