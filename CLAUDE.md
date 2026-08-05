@@ -69,11 +69,14 @@ mmm-recovery/
     dgp.py                    simulator; pure function of (params, seed)
     truth.py                  do()-style interventions, mROAS, optimal allocation
     estimator.py              RidgeMMM
-    conditions.py             C0-C7 as dataclasses
-    metrics.py                three metric rungs
-    experiment.py             grid runner, writes results/grid.csv
-    report.py                 self-contained HTML dashboard
     meridian_anchor.py        optional, C0/C3/C6/C7 only
+    sweep.py                  D26 spend-variation sweep; owns the gate arithmetic
+    robustness.py             D33/D35 optimiser-bound and guardrail checks
+    flighting.py              D34 flighted-spend validity check on C0
+    conditions.py             NOT BUILT — K1 fired before Step 5
+    metrics.py                NOT BUILT — the gates live in sweep.py instead
+    experiment.py             NOT BUILT — no degradation grid was ever run
+    report.py                 NOT BUILT — the dashboard is the last outstanding task
   tests/
   results/                    grid.csv, dashboard.html — committed
   docs/
@@ -202,6 +205,19 @@ Deviation — never because it has become inconvenient.
 - **Regret above 100%** silently clipped. Do not clip it. Worse-than-nothing is the most
   interesting outcome in the study.
 - **`except Exception` swallowing real bugs** as condition failures. Let it crash.
+- **Comparing a computed statistic to a literal threshold with a bare `>=`.** Spearman's ρ on five
+  channels is `1 - 6·Σd²/120`, and scipy evaluates that to 0.7999999999999999889 — one unit in the
+  last place *below* the double nearest to `0.80`. A median ρ of exactly 0.8 was therefore reported
+  as **failing** a `>= 0.80` gate. Use `sweep.passes`, which carries 1e-9 of slack; that is nine
+  orders of magnitude below any threshold's meaningful precision, so it cannot rescue a real
+  failure. A study about careful measurement cannot afford to mislabel a gate on a representation
+  artefact.
+- **Quoting a decision metric without naming its action space.** §3 lets the optimiser zero a
+  channel or take it to 3× spend. Under a two-sided ±30% guardrail the worse-than-nothing rate
+  falls from 80% to 24% (D37). Both are true; neither travels alone.
+- **Counting one bound and concluding about both.** D33 first claimed the recommendations were
+  "interior solutions" on the strength of an upper-bound counter, while the binding constraint was
+  the lower one. If a claim is about the boundary, count every boundary.
 - **Quoting a minimum over noisy tries as though it were a capability.** "The best of N runs
   reached X" is selection on noise, not a configuration anyone can choose. This has caused two
   wrong diagnoses here, the second after the first was written down. Carry N and the spread
