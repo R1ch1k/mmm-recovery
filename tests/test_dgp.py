@@ -209,8 +209,9 @@ def test_d5_mean_pairwise_correlation_holds_for_the_c7_composite() -> None:
 def test_d5_no_individual_pair_strays_beyond_ten_points(condition: str, level: float) -> None:
     """The per-pair half of D5. Holds at every C1 level, but only just at ρ=0.5.
 
-    Worst deviations on seeds 0-29: 0.0987 at ρ=0.5, 0.0455 at ρ=0.8, 0.0199 at ρ=0.95.
-    The ρ=0.5 figure is within a whisker of the tolerance; over 200 seeds it reaches 0.1092.
+    Worst deviations on seeds 0-29: 0.0856 at ρ=0.5, 0.0421 at ρ=0.8, 0.0268 at ρ=0.95.
+    The ρ=0.5 figure has the least headroom; over 200 seeds it reaches 0.1018, so 0.1% of
+    pairs already breach at T=520. The tolerance is comfortable here, but not by much.
     """
     params = condition_params(condition, level)
     for seed in SEEDS:
@@ -225,11 +226,12 @@ def test_d5_no_individual_pair_strays_beyond_ten_points(condition: str, level: f
     strict=True,
     reason=(
         "D5's per-pair tolerance of +/-0.10 is tighter than sampling noise permits at "
-        "C7's T=104. Worst pair deviation is 0.1229 on seeds 0-29 and 0.1641 over 200. "
-        "A matched control with rho=0.7 and T=104 but none of C7's other knobs reaches "
-        "0.1376, so this is the short series, not the composite. Theoretical SE of a "
-        "single correlation at T=104 is 0.0507, making +/-0.10 a two-sigma bound that "
-        "roughly 2% of pairs must exceed. Threshold, not bug — pending a decision."
+        "C7's T=104. Worst pair deviation is 0.1251 on seeds 0-29 and 0.1648 over 200, "
+        "with 2.08% of pairs breaching. A matched control with rho=0.7 and T=104 but "
+        "none of C7's other knobs reaches 0.1495 and breaches on 1.70%, so this is the "
+        "short series, not the composite. Theoretical SE of a single correlation at "
+        "T=104 is 0.0507, making +/-0.10 a two-sigma bound that roughly 2% of pairs must "
+        "exceed. Threshold, not bug — pending a decision."
     ),
 )
 def test_d5_per_pair_tolerance_holds_for_the_c7_composite() -> None:
@@ -277,8 +279,8 @@ def test_d1_placebo_couples_equally_to_search_and_season(level: float) -> None:
     """D1's targets, achieved at all three C6 levels.
 
     The solver pins the *mean* of the two correlations to the target exactly; the two then
-    straddle it. Worst deviation of either individually on seeds 0-29: 0.061 at 0.3, 0.053
-    at 0.45, 0.048 at 0.6. D1 fixes the target but no tolerance, so the ±0.08 asserted here
+    straddle it. Worst deviation of either individually on seeds 0-29: 0.062 at 0.3, 0.054
+    at 0.45, 0.046 at 0.6. D1 fixes the target but no tolerance, so the ±0.08 asserted here
     is a choice, recorded in the Step 2 assumptions.
     """
     params = condition_params("C6", level)

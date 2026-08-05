@@ -53,6 +53,10 @@ class Channel:
         half_saturation: κ in £k per week.
         beta: maximum weekly contribution in £k. Exactly 0.0 for the placebo.
         mean_spend: target mean weekly spend in £k.
+        cycle_phase: offset in weeks of this channel's quarterly budget cycle. Fixed per
+            channel rather than derived from its position, so that adding the placebo cannot
+            shift TV's buying cycle — a channel's spend process must not depend on how many
+            other channels happen to exist.
     """
 
     name: str
@@ -61,18 +65,19 @@ class Channel:
     half_saturation: float
     beta: float
     mean_spend: float
+    cycle_phase: float
 
 
 REAL_CHANNELS: tuple[Channel, ...] = (
-    Channel("tv", 0.70, 1.8, 60.0, 220.0, 55.0),
-    Channel("video", 0.45, 1.2, 30.0, 120.0, 28.0),
-    Channel("search", 0.10, 0.9, 18.0, 90.0, 20.0),
-    Channel("social", 0.30, 1.0, 22.0, 70.0, 18.0),
-    Channel("ooh", 0.60, 2.2, 25.0, 60.0, 12.0),
+    Channel("tv", 0.70, 1.8, 60.0, 220.0, 55.0, 0.0),
+    Channel("video", 0.45, 1.2, 30.0, 120.0, 28.0, 2.0),
+    Channel("search", 0.10, 0.9, 18.0, 90.0, 20.0, 4.0),
+    Channel("social", 0.30, 1.0, 22.0, 70.0, 18.0, 6.0),
+    Channel("ooh", 0.60, 2.2, 25.0, 60.0, 12.0, 8.0),
 )
 """The five channels with a real effect. Present in every condition."""
 
-PLACEBO = Channel("placebo", 0.30, 1.0, 20.0, 0.0, 15.0)
+PLACEBO = Channel("placebo", 0.30, 1.0, 20.0, 0.0, 15.0, 10.0)
 """β is exactly 0.0, not approximately. Present in C5, C6 and C7 only."""
 
 
@@ -267,17 +272,19 @@ def _latent_demand(params: DGPParams, rng: np.random.Generator) -> NDArray[np.fl
 
 
 def _quarterly_cycle(params: DGPParams) -> NDArray[np.float64]:
-    """(T, C) budget-cycle multiplier, one phase per channel.
+    """(T, C) budget-cycle multiplier, one fixed phase per channel.
 
     Phases differ by channel so that the shared budget factor is the *only* route by which
     channels become correlated. That keeps ρ a clean single knob, which the one-knob-at-a-
     time design of §5 requires; a cycle shared across channels would put a correlation floor
     under C0 that D5's ±0.02 tolerance could not accommodate.
+
+    The phases come from the channel table, not from each channel's position in it, so the
+    conditions that add a placebo leave the five real channels' cycles untouched.
     """
     weeks = np.arange(params.n_weeks, dtype=np.float64)[:, None]
-    n_channels = len(params.channels)
-    phases = np.arange(n_channels, dtype=np.float64)[None, :] * (WEEKS_PER_QUARTER / n_channels)
-    angle = 2.0 * np.pi * (weeks + phases) / WEEKS_PER_QUARTER
+    phases = np.array([channel.cycle_phase for channel in params.channels], dtype=np.float64)
+    angle = 2.0 * np.pi * (weeks + phases[None, :]) / WEEKS_PER_QUARTER
     return np.asarray(1.0 + params.quarterly_amplitude * np.cos(angle), dtype=np.float64)
 
 
