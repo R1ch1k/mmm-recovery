@@ -667,64 +667,6 @@ years of weekly data with no confounding, no collinearity and correct functional
 specified model could not identify how much of sales the media caused. The degradation grid
 becomes moot rather than negative. That is a narrower study than planned and a stronger one.
 
-### D25 — 2026-08-05 — Prior art found post hoc; the claim is downgraded accordingly
-
-**Positioning correction, made before publication.** A literature check run after the C0 result
-found Dew, Padilla & Shchetkina (2024), *Your MMM is Broken: Identification of Nonlinear and
-Time-varying Effects in Marketing Mix Models* (Wharton / London Business School, arXiv
-2408.07678). It substantially anticipates the qualitative finding.
-
-They establish that nonlinear and time-varying specifications are frequently not separately
-identifiable; that standard model-selection metrics including cross-validation cannot
-distinguish them; and that the two imply materially different optimal allocations, because
-equivalence under status-quo spending does not imply equivalence under intervention. They
-quantify a dollar "conflation cost" on Nielsen data and propose experimental separation
-tests. They further cite Jin et al. (2017) for the point that the Hill function is poorly
-identified, with different parameter combinations yielding effectively the same function over
-a finite range — which is the plateau documented in D21, described in a 2017 paper that was
-already in this study's own prior-art section.
-
-**§8's prediction that C0 would pass was therefore made without connecting a citation already
-in §1.** That is recorded as an error of literature review, not of measurement.
-
-**What is still claimed, and nothing beyond it:**
-
-1. **Within-family non-identification.** Dew et al. conflate two model *classes*. This study
-   finds failure with the functional form exactly correct and the baseline recovered to
-   1e-13 — a different and starker claim.
-2. **Production tooling.** Their framework is their own Gaussian-process construction. This
-   study ran Google's shipping Meridian on default priors, which failed G1 at 0.456.
-3. **Pre-registration.** Conditions, metrics, thresholds and kill criteria committed before
-   any code, with every deviation dated in this log.
-4. **Distributional decision metrics.** Their conflation cost is a dollar figure for one
-   brand-week. This study reports a beats-status-quo rate of 20% across 200 seeds.
-
-Any framing that presents the identification failure as a discovery is overclaiming and must
-be cut in review. Dew et al. is cited in the README's opening paragraph.
-
-### D26 — 2026-08-05 — Exploratory spend-variation sweep added, labelled non-confirmatory
-
-**Post hoc, and reported separately from the confirmatory results.** Identification depends on
-curvature across the observed spend range, and `spend_log_sd = 0.30` was an assumption
-recorded at the DGP stage rather than a specification. Sweeping it across 0.15 / 0.30 / 0.60 /
-1.00 answers a question the confirmatory study cannot: how much deliberate spend variation a
-team needs before MMM identifies anything.
-
-This condition was **not pre-registered**, was added after C0 failed, and is reported in a
-separate section under an explicit exploratory heading. It sets no gate and revises no
-prediction. Its purpose is practitioner guidance and it converges on the same recommendation
-as Dew et al.'s separation tests, from a different direction.
-
-### D27 — 2026-08-05 — Absolute lift lost leads; normalised regret follows
-
-**Reporting order, not a metric change.** C0's achievable lift is 1.10% of total sales, which
-invites the objection that failing to capture so small a gain is unimpressive. The objection
-is answered by the absolute figure: regret of 2.355 means the recommended allocation does not
-merely miss a 1.10% gain, it costs **2.7% of total sales** against doing nothing.
-
-Per D19 both are reported everywhere. This entry fixes which one leads: the absolute figure,
-with the ratio immediately after. Neither number changes.
-
 ### D22 — 2026-08-05 — The control block gains trend × Fourier interactions
 
 **Corrected; §4's control list was incomplete for §2's own baseline.** §2 builds the baseline
@@ -818,3 +760,395 @@ Note what Meridian's G2 pass does and does not mean. Coverage of 0.820 alongside
 bias of 0.456 is an interval wide enough to contain a badly wrong point estimate — honest
 uncertainty, not accuracy. Interval widths were not recorded, so the attribution to posterior
 integration is inferred from the coverage-versus-bias pair rather than measured directly.
+
+### D25 — 2026-08-05 — Prior art found post hoc; the claim is downgraded accordingly
+
+**Positioning correction, made before publication.** A literature check run after the C0 result
+found Dew, Padilla & Shchetkina (2024), *Your MMM is Broken: Identification of Nonlinear and
+Time-varying Effects in Marketing Mix Models* (Wharton / London Business School, arXiv
+2408.07678). It substantially anticipates the qualitative finding.
+
+They establish that nonlinear and time-varying specifications are frequently not separately
+identifiable; that standard model-selection metrics including cross-validation cannot
+distinguish them; and that the two imply materially different optimal allocations, because
+equivalence under status-quo spending does not imply equivalence under intervention. They
+quantify a dollar "conflation cost" on Nielsen data and propose experimental separation
+tests. They further cite Jin et al. (2017) for the point that the Hill function is poorly
+identified, with different parameter combinations yielding effectively the same function over
+a finite range — which is the plateau documented in D21, described in a 2017 paper that was
+already in this study's own prior-art section.
+
+**§8's prediction that C0 would pass was therefore made without connecting a citation already
+in §1.** That is recorded as an error of literature review, not of measurement.
+
+**What is still claimed, and nothing beyond it:**
+
+1. **Within-family non-identification.** Dew et al. conflate two model *classes*. This study
+   finds failure with the functional form exactly correct and the baseline recovered to
+   1e-13 — a different and starker claim.
+2. **Production tooling.** Their framework is their own Gaussian-process construction. This
+   study ran Google's shipping Meridian on default priors, which failed G1 at 0.456.
+3. **Pre-registration.** Conditions, metrics, thresholds and kill criteria committed before
+   any code, with every deviation dated in this log.
+4. **Distributional decision metrics.** Their conflation cost is a dollar figure for one
+   brand-week. This study reports a beats-status-quo rate of 20% across 200 seeds.
+
+Any framing that presents the identification failure as a discovery is overclaiming and must
+be cut in review. Dew et al. is cited in the README's opening paragraph.
+
+### D26 — 2026-08-05 — Exploratory spend-variation sweep added, labelled non-confirmatory
+
+**Post hoc, and reported separately from the confirmatory results.** Identification depends on
+curvature across the observed spend range, and `spend_log_sd = 0.30` was an assumption
+recorded at the DGP stage rather than a specification. Sweeping it across 0.15 / 0.30 / 0.60 /
+1.00 answers a question the confirmatory study cannot: how much deliberate spend variation a
+team needs before MMM identifies anything.
+
+This condition was **not pre-registered**, was added after C0 failed, and is reported in a
+separate section under an explicit exploratory heading. It sets no gate and revises no
+prediction. Its purpose is practitioner guidance and it converges on the same recommendation
+as Dew et al.'s separation tests, from a different direction.
+
+### D27 — 2026-08-05 — Absolute lift lost leads; normalised regret follows
+
+**Reporting order, not a metric change.** C0's achievable lift is 1.10% of total sales, which
+invites the objection that failing to capture so small a gain is unimpressive. The objection
+is answered by the absolute figure: regret of 2.355 means the recommended allocation does not
+merely miss a 1.10% gain, it costs **2.7% of total sales** against doing nothing.
+
+Per D19 both are reported everywhere. This entry fixes which one leads: the absolute figure,
+with the ratio immediately after. Neither number changes.
+
+**Superseded in one respect by D29:** the figure is right and the comparator named in the
+sentence above is wrong. 2.7% is the shortfall from the *optimum*, not the loss against doing
+nothing. The ordering rule this entry sets is unaffected.
+
+### D28 — 2026-08-05 — The optimiser start seed is fixed at 0. Recovered, not recorded.
+
+**Reproducibility repair, found while building D26's sweep.** D23's five-gate table was
+produced by a harness that was never committed. `sweep.py`'s control column is the first
+independent re-derivation of it, and it is the reason the sweep can be compared to the
+confirmatory result at all.
+
+G1, G2 and G3 reproduced to the printed digit on the first attempt. G4 and G5 did not: passing
+the *data* seed to the recommendation solve gives 2.386 and 0.195 against D23's 2.355 and
+0.200. The whole of the difference is which seed reaches the SLSQP starting points. Measured
+across six conventions, 200 seeds each:
+
+| Convention | G4 median regret | G5 beats-status-quo |
+|---|---|---|
+| truth = seed, recommendation = seed | 2.3856 | 0.1950 |
+| truth = 0, recommendation = 0 | **2.3546** | **0.2000** |
+| truth = seed, recommendation = 0 | **2.3546** | **0.2000** |
+| truth = 0, recommendation = seed | 2.3856 | 0.1950 |
+| truth = seed, recommendation = seed, 16 starts | 2.4060 | 0.1850 |
+| truth = seed, recommendation = seed, 32 starts | 2.4173 | 0.1850 |
+
+D23 used a **fixed** seed on the recommendation solve. The truth-side solve is insensitive to
+the choice — the structured starts win on the true surface and the single screened random start
+never decides the optimum there — which is why the two conventions that fix the recommendation
+seed agree exactly with each other and with D23. `sweep.py` fixes `OPTIMISER_SEED = 0` for both
+solves and refuses to write results unless the control reproduces D23 to 5e-4.
+
+Two things this makes visible, neither comfortable:
+
+- **A published decision number rested on an undocumented convention.** G1–G3 are properties of
+  the generating process and the fit, and were never at risk. G4 and G5 are properties of a
+  non-concave optimisation, and were.
+- **More starting points make regret worse, not better** — 2.386 → 2.406 → 2.417 at 8, 16 and 32
+  starts. This is D21's anti-strawman result appearing a second time, in a second place: a
+  better search on the *fitted* surface finds allocations that are better by the model's own
+  reckoning and worse against the truth.
+
+The sensitivity is small — 1.3% relative on median regret, one seed in 200 on beats-status-quo —
+and belongs in the limitations, stated, rather than here, buried.
+
+### D29 — 2026-08-05 — D27's 2.7% names the wrong comparator. The figure stands, the sentence does not.
+
+**Correction to a reporting decision, made before publication.** D27 states that regret of 2.355
+means the recommendation "costs 2.7% of total sales *against doing nothing*". Both quantities,
+measured at 200 seeds on C0:
+
+| Quantity | Median | p10 | p90 |
+|---|---|---|---|
+| Shortfall from the optimum, `(S_opt − S_model) / S_sq` | **2.73%** | 0.77% | 6.15% |
+| Loss against doing nothing, `(S_sq − S_model) / S_sq` | **1.58%** | −0.42% | 4.99% |
+
+D23's "2.7% of total sales (p10–p90: 0.8%–6.1%)" matches the first row to two decimals and does
+not match the second. The 2.7% is the gap to the **best available allocation**, not the damage
+done relative to the status quo.
+
+Both numbers are real, both are damning, and they answer different questions. The write-up uses
+both, in this form:
+
+- the recommended allocation falls **2.7% of total sales short of the best available one**,
+  against an achievable lift of 1.16%;
+- and at the median it **destroys 1.6% of total sales against doing nothing**.
+
+D27's ordering rule is unchanged: the absolute figure leads, the ratio follows. Only the
+comparator in its prose is corrected, and nothing that was computed changes.
+
+**A second number in the same family does not reproduce.** §4, D19 and D27 all quote C0's
+achievable lift as 1.10% of sales. The 200-seed median is **1.16%** (p10 1.11%, p90 1.22%,
+min 1.03%, max 1.26%, seed 0 = 1.17%). 1.10% is not the median, not seed 0 and not an extreme;
+14 of 200 seeds fall below it. Its provenance is not recorded and is not recoverable from the
+repository. The write-up uses 1.16% and says which figure it is using.
+
+### D30 — 2026-08-05 — Two sweep cells fail SLSQP. They are recorded, not absorbed.
+
+**Measured, bounded, and excluded with the exclusion stated.** Across the 800 cells of D26's
+sweep, two fail the optimiser: `spend_log_sd` 0.15 seed 78, and 1.00 seed 160. Both fail on the
+**fitted** surface, never the true one; both fail from a *structured* start; both have healthy
+coefficients (min |β̂| of 95.1 and 12.4, no zeros). This is a local linesearch failure on a
+non-concave estimate, not a degenerate model, and not the unscaled-objective failure CLAUDE.md
+describes.
+
+`truth.optimal_allocation` raises on any failed start and that does not change. Every number
+already published rests on that strictness, and CLAUDE.md names "convergence failures reported
+as low regret" as a specific failure mode. The handling is therefore in the harness, not the
+instrument: the cell is recorded as a `SolveFailure`, written to the CSV as `solve_failed = 1`
+so that it cannot be mistaken for a seed that was never run, and excluded from the medians.
+
+Excluding cells is a selection, so the adverse bound travels with it. `g5_worst_case` counts
+every failure as a loss: at sd 0.15 it is 0.0950 against the reported 0.0950, and at sd 1.00
+0.4600 against the reported 0.4623. One cell in two hundred cannot move a median, and the
+bound is reported rather than asserted.
+
+The control column at sd 0.30 has **zero** failures, which `verify_control` requires before any
+result is written.
+
+### D31 — 2026-08-05 — The novelty claim for the decision metrics is withdrawn entirely
+
+**Second downgrade, from the novelty sweep D25 required.** D25 item 4 claimed "distributional
+decision metrics" as a surviving contribution: a beats-status-quo rate across 200 seeds against
+a single dollar figure for one brand-week. A search across academic marketing science,
+industry and vendor material, adjacent literatures and brute-force phrasing — roughly 130
+queries and three independent adversarial passes — establishes that the claim as worded does
+not survive. **It is withdrawn. No novelty is claimed for the metric.**
+
+What was found, in descending order of how badly it damages the original wording:
+
+| Source | What it reports | Verified |
+|---|---|---|
+| Haus, *Fast, Confident, and Wrong* (haus.io blog) | "acting on noisy results left the business **worse off than doing nothing 38% of the time**"; 36 scenarios × 1,000,000 runs; "The true performance of every channel is **held fixed**" | Re-fetched directly, quotes confirmed |
+| Dew et al. (2024) Table 1, p.19 | A rate over 2,187 settings × 100 datasets against known truth — 81–99% any-conflation, 27–47% major | Four independent readers |
+| Agarwal et al. (2021), NeurIPS | Standardised *probability of improvement* across seeds, with bootstrap intervals, as a reporting convention | Abstract |
+| Thomas et al. (2015, 2019) | Safe policy improvement is *built* around bounding P(learned policy worse than incumbent) | Abstract |
+| DeMiguel, Garlappi & Uppal (2009); Smith & Winkler (2006) | The finding's shape — an optimiser losing to a naive incumbent once estimation error swamps the optimisation gain — and the mechanism that names it | Abstract |
+
+**Haus is the one that matters and it is not academic**, which is exactly why the first sweep
+missed it and a practitioner referee would not. It differs from this study in a way that is
+evidence rather than an excuse: **Haus fits no model.** Measurement is truth plus stipulated
+noise — no adstock, no saturation, no confounded demand, no design matrix, no identification
+problem. Their quantity is the cost of *noise* in an unbiased readout, which more data removes.
+This study's is the cost of *non-identification* in a correctly specified estimator, which more
+data does not remove. Both are worth knowing and they are not the same object.
+
+It is also worth stating without flinching: **this study's 20% is worse than Haus's worst arm,
+which beat the baseline 62% of the time.**
+
+**What the write-up says instead.** G4 and G5 are presented as measurements, not as a
+contribution. The statistic is credited where it comes from. The residual claim — that this is
+the rate for a *fitted* MMM evaluated by intervention on a known generating process, rather
+than for a stipulated-noise readout or against the model's own fitted surface — is stated once,
+in plain language, and not called novel.
+
+**One thing found in the sweep runs the other way and is recorded here so it is not lost.**
+Pathak, Jeunen & Lambert (2026), *Auditing Marketing Budget Allocation with Hindsight Regret*
+(arXiv 2604.25977), name this study's design as their own open problem: "An important next step
+is a semi-synthetic benchmark with **known response structure and oracle regret**, which would
+enable direct recovery-based validation of the framework." That is a dated, independent
+statement from a competing team that the gap exists. It is a better opening for the related-work
+section than any novelty claim would have been.
+
+**Disclosed gap.** One of three adversarial refuters — the pre-1990 marketing-science pass over
+Little, Lodish, Hanssens, Leeflang and the normative decision-model literature — terminated on a
+session limit and did not complete. That angle is unswept.
+
+### D32 — 2026-08-05 — D26's claim of convergence with Dew et al.'s separation tests is corrected
+
+**D26's text stands as written and is corrected here rather than edited, per the log's own
+rule.** D26 closes: "it converges on the same recommendation as Dew et al.'s separation tests,
+from a different direction." Having now read §7 in full, that sentence is not defensible on
+three counts.
+
+1. **Dew et al. prescribe a spending *policy*, not an amount of variation.** §7.1's maximal
+   separation sets each period's spend to the grid value maximising the disagreement between
+   the two candidate models, refits, and reads off which predicted better; §7.2's seesaw
+   alternates between the highest and lowest candidate spend "one period at a time". The only
+   quantity they give is a **duration** — "a firm need only conduct this test for 1–2 periods".
+   There is no amplitude prescription anywhere to converge on.
+2. **Their variation is experimental; this sweep's is observational.** They choose future spend
+   and refit. This sweep raises the dispersion of spend the DGP generates. Their §5.2 is built
+   on precisely the distinction between status-quo and interventional evidence, so blurring it
+   hands away the study's own central point.
+3. **They ran the observational analogue and it did nothing.** Their spend-variance parameter τ
+   ∈ {1, 5, 10} is insignificant in all four cells of Table 2 (p.19; largest |coefficient| 0.47,
+   smallest p 0.37). A claim of convergence would put this study in visible tension with their
+   own table.
+
+**The corrected relationship, which is stronger than the claim it replaces.** Dew et al. reach a
+related conclusion from the model-selection side: their remedy for non-identification is a
+deliberate spending policy, not the hope that observed variation will suffice. This sweep is the
+observational counterpart and reaches the same practical conclusion by failing: even at
+`spend_log_sd` = 1.00 — weekly spend routinely swinging by a factor of about 2.7, well beyond
+anything a planner produces — four of five gates still fail and 53.8% of runs remain worse than
+doing nothing. **That is an argument for their experimental route, not a convergence with it.**
+
+Why this sweep moves identification at all where their τ sweep did not, stated so it is not
+mistaken for a contradiction: this DGP's log spend is serially uncorrelated, so raising its
+dispersion raises *local* week-to-week variability and marginal spread together, which is closer
+to a randomly timed seesaw than to their τ sweep. Their outcome is holdout prediction parity,
+which extra variance need not break; this study's is recovery and allocation regret, which extra
+curvature coverage directly serves.
+
+**Carried into the write-up as a caveat**, per their p.33 note that carryover blunts seesaw
+tests: adstock decays of 0.10–0.70 mean the estimator sees less week-to-week swing than is
+injected — most of all on TV, whose λ is 0.70, the highest in §2's table — so a recommendation
+phrased in raw spend variation will not transfer unchanged to a team with heavy TV adstock.
+
+**Correction to this entry's own arithmetic.** An earlier version of the sentence above, and of
+the README paragraph derived from it, gave the decay range as 0.10–0.60. §2's table is 0.70 (tv),
+0.45 (video), 0.10 (search), 0.30 (social), 0.60 (ooh). The upper end is TV's 0.70 — which is the
+channel the sentence uses as its own example, so the wrong bound excluded the case it was making.
+
+**A second limit on this sweep, recorded because it bounds what D32 may conclude.** The sweep
+varies the *amplitude* of spend jitter and never its *shape*. The spend process is lognormal and
+never reaches zero, so a flighted plan — weeks on, weeks dark, which is the closest cheap
+analogue of Dew et al.'s deliberate high-low policy and is already how many advertisers buy TV —
+is **outside the family swept here**. The claim "no realistic amount of observational variation is
+enough" is therefore established for amplitude and untested for shape. Whether a flighted plan
+restores identification is the most valuable outstanding run in this project.
+
+### D33 — 2026-08-05 — Post-hoc optimiser-bound robustness check. The failure survives it.
+
+**Not pre-registered, added because the prior art demanded it.** §3 allows `m_c` ∈ [0, 3.0], so
+the model may recommend tripling a channel on a response curve fitted from data that never went
+there. Dew et al. impose the opposite restriction twice and say why — "we remove the candidate
+allocations that assign to at least one of the channels a level of spending that falls outside
+of the historical range" (p.29) and "This ensures that our optimal solution is not relying purely
+on extrapolation of the response function" (fn.13). A median regret of 2.355 with 160 of 200
+seeds above 100% is exactly what an optimiser extrapolating an S-shaped Hill curve would produce,
+and that is the most likely way the headline gets dismissed.
+
+Both solves take the same bound, so D18's requirement that truth and recommendation be
+identically configured is preserved. C0, 200 seeds:
+
+| Upper bound on m_c | G4 median regret | G5 beats status quo | 95% CI | Achievable lift | Share regret > 1 | At upper bound (of 5) | Zeroed, model | Zeroed, truth | n |
+|---|---|---|---|---|---|---|---|---|---|
+| 1.3 | 1.407 | 0.303 | [0.243, 0.370] | 1.126% | 0.697 | 1.530 | 0.75 | 1.00 | 198 |
+| 1.5 | 1.501 | 0.270 | [0.213, 0.337] | 1.160% | 0.730 | 0.867 | 0.88 | 1.00 | 196 |
+| 2.0 | 2.284 | 0.216 | [0.165, 0.278] | 1.160% | 0.784 | 0.291 | 1.16 | 1.00 | 199 |
+| 3.0 (§3) | 2.355 | 0.200 | [0.150, 0.261] | 1.160% | 0.800 | **0.035** | 1.24 | 1.00 | 200 |
+
+**Precise wording of what was run, because a first version of this entry got it wrong.** The
+bound applied is `m_c ∈ [0, B]` — an upper cap only. `truth.py` fixes the lower bound at 0.0 at
+every setting, so a channel can always be switched off. The row labelled 1.3 is therefore "cap
+every channel at 130% of current spend", **not** the two-sided ±30% planning rule it was first
+described as. A genuine two-sided guardrail is a different and untested configuration.
+
+**The extrapolation objection is answered.** At §3's own bound, the model's recommendation puts
+on average **0.035 of 5 channels** at `m_c = 3.0` — seven of a thousand channel-slots. There is
+essentially nothing at 3× spend for the regret to be an artefact of. Capping at 1.3 instead
+leaves the advice still worse than doing nothing at the median (1.407) and beating the status quo
+in under a third of runs, 0.303 [0.243, 0.370] against a threshold of 0.90.
+
+**A claim withdrawn.** The first version of this entry concluded from that 0.035 that "the
+recommendation is an interior solution". That was wrong, and it was wrong because
+`on_upper_bound` counts only one of the two bounds. The binding constraint is the **lower** one:
+the model zeroes **1.24 of 5 channels** on average at bound 3.0. `robustness.py` now counts both,
+and the CSV carries both columns.
+
+**What that actually shows, once counted properly, is more interesting than the withdrawn claim.**
+The *true* optimum also zeroes a channel — exactly **1.00**, in every seed, always OOH, the one
+channel whose true ROAS is below break-even at 0.82 against 1.73–2.30 elsewhere. So defunding a
+channel is not the error. Defunding **more** channels than the truth does is, and the model
+defunds 1.24 where the truth defunds 1.00. Regret is measured like for like; the model is simply
+wrong about which channels deserve it.
+
+**One consequence for how regret should be read, recorded because it is a real limitation.** Since
+the true optimum's entire 1.16%-of-sales headroom is essentially "delete OOH and move it to TV",
+and no marketing team switches a channel off on model evidence alone, the benchmark is not an
+implementable decision. Regret here is measured against an optimum a governed team could not
+reach, which raises every regret figure relative to one computed inside a realistic action space.
+Stated in the README's limitations.
+
+The mechanism is worth stating because it is the interesting part: the **true** optimum barely
+needs the extra room, since achievable lift falls only from 1.160% to 1.126% when the bound drops
+from 3.0 to 1.3. The **model's** regret nearly halves over the same change. The damage is
+concentrated in recommendations the truth never needed, which is what an estimation-error
+maximiser looks like.
+
+Counts below 200 are the D30 solve failures at the tighter bounds, recorded there.
+
+### D34 — 2026-08-05 — Flighted spend as a validity check on C0. Design and readings pre-committed.
+
+**Written before the run. No flighting result existed when this entry was committed.**
+
+**This is not a third exploratory arm; it is an anti-strawman check on C0 itself**, in the same
+class as D9 and D12. D26's sweep varies the *amplitude* of spend jitter, and jitter of any size
+samples a narrow band of the response curve — it moves spend around its mean without ever
+approaching the origin. A flighted plan does something categorically different: it traces the
+curve **near zero**, and it makes adstock decay directly observable during dark weeks, because
+sales in a dark week are the carryover and nothing else.
+
+So the question is not whether the sweep was complete. It is whether **C0's spend process was
+unrepresentatively hard**. Real media plans may carry identifying information that a lognormal
+jitter simply does not contain. If so, C0 understates what a real analyst has, and the headline
+weakens accordingly. That possibility has to be tested by the people making the claim.
+
+**Design, fixed before running and chosen to be defensible rather than favourable:**
+
+- **TV, video and OOH flight. Search and social stay always-on.** That is how these channels
+  actually behave — search and social are budget-capped and pacing-automated, brand channels are
+  bought in bursts. It is not a split chosen to produce an outcome.
+- **Bursts of 2–6 weeks live, dark blocks between, targeting a 40–60% duty cycle.**
+- **Channels flight independently, not in sync.** Synchronised flighting would induce cross-channel
+  spend correlation and confound this check with C1, which tests collinearity on purpose.
+- **Each channel's total spend is preserved**, by scaling live weeks up by the reciprocal of its
+  realised duty cycle. A planner who flights has the same budget and concentrates it; leaving
+  totals to fall would confound "flighted" with "spent half as much".
+- **Realised media share is reported** (D4). Concentrating a fixed budget into fewer weeks pushes
+  those weeks further along the saturation curve, so the 25.0% of C0 will drift and the drift is
+  a result, not a defect.
+- Truth is recomputed by intervention on the new spend path, as §3 requires. Nothing is carried
+  over from C0.
+
+**Both readings are committed here, before the number is known:**
+
+- **If G1 still fails under flighting** — C0's spend process was not the cause of the failure.
+  The headline stands, with one fewer attack surface, and the "unrepresentatively hard DGP"
+  objection is answered on the record rather than argued.
+- **If G1 passes under flighting** — the conclusion is **not** "MMM works". It is that
+  identification depends on spend having gone dark, which is a property of the **media plan**,
+  not of the model. A team whose channels are always-on cannot identify its own response curves
+  no matter how good its modelling is, and a team that flights can. That is a **more** actionable
+  finding than the current one, it becomes the lead recommendation in
+  `docs/WHEN-TO-TRUST-YOUR-MMM.md`, and it is reported without hedging.
+
+Recorded explicitly: **this check was run because it could overturn the headline, not because it
+was expected to support it.**
+
+Post-hoc and non-confirmatory, like D26. It sets no gate and revises no §8 prediction.
+
+### D35 — 2026-08-05 — Two-sided allocation guardrail. Pre-committed, run in the same pass.
+
+**Written before the run.** D33 capped `m_c` above and left the floor at zero, so its rows do not
+answer the separate objection that regret is driven by the optimiser making recommendations no
+planner would accept. D20 records that the true optimum **defunds OOH entirely in every
+condition**, and on C0 that single move is most of the available headroom — so both the benchmark
+and the recommendation depend on a decision a governed team would never sign off.
+
+This adds `m_c ∈ [0.7, 1.3]`: a planning rule that forbids switching any channel off and caps
+change at ±30% either way. It needs no refit — the same fitted surfaces are re-solved — so it runs
+in the same pass as D34.
+
+`truth.optimal_allocation` gains a `min_multiplier` argument defaulting to 0.0. **The default
+reproduces present behaviour exactly**, so no number already reported moves. Both the truth solve
+and the recommendation solve take the same floor, preserving D18.
+
+**Pre-committed reading:** the interesting quantity is G5, not G4. Regret's denominator shrinks
+under the guardrail — less headroom is reachable — so G4 is not comparable across bound sets and
+will be reported without cross-comparison. G5 is a rate and is comparable. If the advice still
+loses to the status quo more often than not under a rule that forbids the destructive move, the
+objection is closed.
