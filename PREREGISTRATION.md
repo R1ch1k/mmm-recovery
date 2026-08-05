@@ -429,6 +429,14 @@ reported. Baseline is linear in B0, so the two should agree; if the gap survives
 re-derivation, something in the calibration is not linear in B0 and must be identified
 before proceeding.
 
+**Resolved 2026-08-05.** Not a bug. Baseline is exactly linear in B0 and contributions are
+bit-identical across it. The two closed forms inverted different inputs — seed 0 alone gives
+680.82, the 30-seed mean gives 684.05 — and since a mean of ratios is not a ratio of means,
+neither is the root of the quantity that matters. B0 = **682.5179**, the numerical root of
+mean-share = 0.25 over seeds 0–199, the set C0 actually runs. Realised share 25.0000% in
+sample, 24.9951% out of sample on seeds 200–399. Committed as a constant with a test that
+re-runs the solver to prove it is derived rather than asserted.
+
 ### D10 — 2026-08-05 — C7 placebo coupling reduced to 0.45
 
 **Corrected.** A coupling of 0.6 is unreachable on roughly 1.8% of seeds, so C7 would fail
@@ -509,3 +517,91 @@ assumption not in §2, for a 1.1% effect.
 Recorded for transparency: the recentred version also flips the sign of C3's media-share
 drift. The choice was made on parsimony rather than on that outcome, but the sensitivity is
 logged so the decision can be re-examined rather than discovered later.
+
+### D16 — 2026-08-05 — D11's bound gains a systematic allowance
+
+**Loosened, and classified as such.** D11's pure sampling-noise bound fails at C1[0.95]:
+0.0281 observed against a 0.0172 bound, passing at every other level. The cause is
+systematic rather than sampling — pair means spread by 0.0327 against a seed-to-seed SD of
+0.0030, an 11× ratio, and the ordering is perfectly monotone in the quarterly phase gap
+between channels. The systematic term sits at 0.017–0.021 across all four levels and does
+not scale with ρ, whereas D11's sampling term collapses as ρ → 1. That is why it bites only
+at 0.95.
+
+The bound is now **0.025 + 4·(1−ρ_target²)/√(T−3)**. A **separate** assertion requires the
+measured systematic component to stay at or below 0.021, so the allowance cannot silently
+absorb a growing defect — if the generator changes and the systematic spread grows, that
+assertion fires rather than the bound quietly accommodating it.
+
+This completes D5's own concession that equal pairwise ρ is unattainable with unequal
+channel volatilities; D11's formula simply had no term for it. **This is a generator
+self-consistency check, not one of the G-gates**, so loosening it does not change the
+difficulty of the study for MMM and flatters no finding in either direction.
+
+Setting `quarterly_amplitude` to 0.03 would also make it pass and was rejected: changing a
+generator parameter to satisfy a threshold written after seeing the data is the wrong
+direction regardless of who owns the parameter.
+
+### D17 — 2026-08-05 — Multi-start agreement replaced with reference-optimum verification
+
+**Corrected; the original test was wrong.** CLAUDE.md required multi-start solutions to
+agree within 0.1%. Only 3–7 of 8 starts reach the best solution, with a spread of
+0.105–0.156 on media contribution. This is correct behaviour, not a solver defect: TV
+(α = 1.8) and OOH (α = 2.2) make the objective non-concave, genuine local optima exist, and
+they are interpretable — they scale one S-shaped channel up and starve the rest. Requiring
+starts to agree is requiring convexity, and if it held, one start would suffice.
+
+The standard is now that **the returned optimum matches a 64-start reference**, with the
+structured-plus-screened start set validated against a 256-start reference across at least
+100 trials at zero misses.
+
+**Limitation:** global optimality is therefore empirically supported, not proven. On a
+non-concave surface no finite start set can prove it, and that is stated wherever the
+optimum is reported.
+
+### D18 — 2026-08-05 — Oracle-surface control added
+
+**New control, no gate changed.** Because the objective is non-concave (D17), the
+estimator's own allocation solve faces the same local optima as the truth solve. Without a
+control, regret would conflate estimation error with optimisation error.
+
+Two requirements. First, the model's allocation must use an **identical optimiser
+configuration** to the truth solve, so residual optimisation error is common-mode. Second,
+an **oracle-surface control** is run: the allocation procedure is applied to the *true*
+response surface, which must return approximately zero regret. Any non-zero result is
+optimisation error and is reported separately from, not folded into, the estimator's regret.
+
+### D19 — 2026-08-05 — Regret's denominator varies tenfold; interpretation rule committed
+
+**Interpretation rule plus a descriptive metric. G4 is unchanged.** True achievable lift
+runs from 1.10% of total sales at C0 to 11.18% at C7. Regret normalises by that quantity, so
+its denominator varies roughly tenfold across the grid. C0 has the tightest denominator in
+the study: the surface is nearly flat near the status quo there, so small allocation errors
+produce large regret percentages.
+
+This was not anticipated when G4 was written and is recorded now, before the estimator
+exists and before any regret number has been seen.
+
+1. **G4's threshold of 20% is unchanged.** If C0 fails it, that is a genuine K1 question
+   about the harness and is treated as one. No exemption is created here.
+2. **Absolute lift lost, as a percentage of total sales, is reported alongside regret** for
+   every condition. A 40% regret at C0 is 0.44% of sales; the same 40% at C7 is 4.5%.
+3. **Cross-condition regret comparisons read as "share of what was achievable there," not
+   "damage done."** The two orderings can differ and the absolute figure settles which is
+   meant.
+
+### D20 — 2026-08-05 — OOH is defunded at the true optimum in every condition
+
+**Recorded, not corrected.** The true optimum drops OOH entirely (m = 0) in every condition,
+and gives the placebo exactly zero budget wherever one exists. OOH has κ = 25 and α = 2.2
+against a mean spend of 12, so it sits below the take-off point of its own S-curve and never
+earns its marginal pound.
+
+Two consequences. It sharpens G6: the correct placebo share is exactly 0%, not merely small,
+so any share the model recommends is fabrication rather than rounding. And it makes OOH a
+structural second quasi-placebo in decision terms, present in all conditions, which
+marginally reduces how informative G3's rank metric is — OOH is always last.
+
+β is not adjusted to fix this, because D4 locks the table and because a channel that should
+be defunded is a realistic and useful thing for the study to contain. It is a finding for
+the practitioner-facing write-up, not a defect.
