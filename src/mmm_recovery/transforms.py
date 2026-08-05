@@ -164,6 +164,48 @@ def hill_saturation(
     return np.asarray(powered / (powered + half_saturation**shape), dtype=np.float64)
 
 
+HILL_GRADIENT_FLOOR = 1e-12
+"""Fraction of κ below which the Hill gradient is evaluated at a floor rather than at zero.
+
+For α < 1 the Hill curve has an infinite slope at zero spend, which is mathematically correct
+and useless to an optimiser: it returns an inf that no line search can work with. The floor
+keeps the gradient finite and pointing the right way — upward. It bites only exactly at zero
+adstocked spend, and only for α < 1.
+"""
+
+
+def hill_saturation_derivative(
+    adstocked: NDArray[np.float64], half_saturation: float, shape: float
+) -> NDArray[np.float64]:
+    """d(`hill_saturation`)/d(adstocked spend), in closed form.
+
+    ``h'(x) = α·κ^α·x^(α-1) / (x^α + κ^α)²``. Lives here, next to the function it
+    differentiates, because both the true response surface and the estimator's fitted surface
+    need it and a gradient formula written out twice is exactly the defect that produces a
+    converged-looking solve at the wrong point.
+
+    Args:
+        adstocked: (T,) adstocked spend, £k per week.
+        half_saturation: κ in £k per week. Must be positive.
+        shape: α, the Hill exponent. Must be positive.
+
+    Returns:
+        (T,) derivative, per £k per week.
+    """
+    series = _validated_series(adstocked, "adstocked")
+    if half_saturation <= 0.0:
+        raise ValueError(f"half_saturation (κ) must be positive; got {half_saturation}")
+    if shape <= 0.0:
+        raise ValueError(f"shape (α) must be positive; got {shape}")
+    floored = np.maximum(series, HILL_GRADIENT_FLOOR * half_saturation)
+    powered = floored**shape
+    half_powered = half_saturation**shape
+    return np.asarray(
+        shape * half_powered * floored ** (shape - 1.0) / (powered + half_powered) ** 2,
+        dtype=np.float64,
+    )
+
+
 def logistic_saturation(
     adstocked: NDArray[np.float64], half_saturation: float, scale: float
 ) -> NDArray[np.float64]:

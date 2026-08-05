@@ -28,6 +28,7 @@ in £k over the whole horizon and £k of sales per £k of spend respectively.
 """
 
 from dataclasses import dataclass, field
+from typing import Protocol
 
 import numpy as np
 from numpy.typing import NDArray
@@ -38,6 +39,7 @@ from mmm_recovery.dgp import Channel, DGPParams, SimResult
 from mmm_recovery.transforms import (
     geometric_adstock,
     hill_saturation,
+    hill_saturation_derivative,
     logistic_saturation,
     weibull_adstock,
 )
@@ -62,14 +64,45 @@ start would suffice. The threshold survives as a way of reporting how much the s
 _BUDGET_TOLERANCE = 1e-8
 """Relative slack allowed on the budget equality before a solve is rejected as infeasible."""
 
-_HILL_GRADIENT_FLOOR = 1e-12
-"""Fraction of κ below which the Hill gradient is evaluated at a floor rather than at zero.
 
-For α < 1 the Hill curve has an infinite slope at zero spend, which is mathematically correct
-and useless to an optimiser. Search (α = 0.9) is the affected channel, and only exactly at
-m_c = 0, a single boundary point. The floor keeps the gradient finite and pointing the right
-way — upward — instead of returning an inf that SLSQP cannot line-search against.
-"""
+class AllocatableSurface(Protocol):
+    """What `optimal_allocation` needs from a response surface — and nothing more.
+
+    **This protocol is how D18 is enforced rather than promised.** D18 requires the model's
+    allocation solve to use an *identical* optimiser configuration to the truth solve, so that
+    residual optimisation error is common-mode and cancels out of regret instead of masquerading
+    as estimation error. The way to guarantee that is not to write the same configuration twice
+    carefully — it is to have only one. `optimal_allocation` is that one solve, and it runs
+    against anything shaped like this: the true surface built from `DGPParams`, or the fitted
+    surface `estimator.py` builds from λ̂, α̂, κ̂ and β̂.
+
+    Deliberately structural (no `runtime_checkable`, no base class). A fitted surface is not a
+    kind of true surface and must not be able to inherit from one — that is precisely the
+    direction a true parameter could leak.
+    """
+
+    @property
+    def n_channels(self) -> int: ...
+
+    @property
+    def budget(self) -> float:
+        """Total status-quo spend across all channels, £k over the horizon."""
+
+    @property
+    def spend_totals(self) -> NDArray[np.float64]:
+        """(C,) total status-quo spend per channel, £k over the horizon."""
+
+    def media_total(self, multipliers: NDArray[np.float64]) -> float:
+        """Total media contribution over the horizon, £k."""
+
+    def media_gradient(self, multipliers: NDArray[np.float64]) -> NDArray[np.float64]:
+        """(C,) d(media_total)/dm_c, in closed form."""
+
+    def total_sales(self, multipliers: NDArray[np.float64]) -> float:
+        """Total sales over the horizon, £k. The objective §3 maximises."""
+
+    def status_quo(self) -> NDArray[np.float64]:
+        """The all-ones multiplier vector — the allocation the client already has."""
 
 
 def _saturate(
@@ -93,6 +126,10 @@ def _saturation_derivative(
     Supplying this to SLSQP rather than letting it difference the objective is not a
     micro-optimisation: the optimiser runs once per dataset across a 4,500-dataset grid, and
     a finite-difference gradient costs C+1 objective evaluations per iteration.
+
+    The Hill branch delegates to `transforms.hill_saturation_derivative`, which carries the
+    `HILL_GRADIENT_FLOOR` that keeps the α < 1 slope at zero spend finite. Search (α = 0.9) is
+    the channel that needs it, and only exactly at m_c = 0, a single boundary point.
     """
     values = np.asarray(adstocked, dtype=np.float64)
     if params.misspecified:
@@ -100,13 +137,7 @@ def _saturation_derivative(
         response = expit((values - channel.half_saturation) / scale)
         at_zero = expit((0.0 - channel.half_saturation) / scale)
         return np.asarray(response * (1.0 - response) / (scale * (1.0 - at_zero)))
-    shape, half = channel.hill_shape, channel.half_saturation
-    floored = np.maximum(values, _HILL_GRADIENT_FLOOR * half)
-    powered = floored**shape
-    half_powered = half**shape
-    return np.asarray(
-        shape * half_powered * floored ** (shape - 1.0) / (powered + half_powered) ** 2
-    )
+    return hill_saturation_derivative(values, channel.half_saturation, channel.hill_shape)
 
 
 def _adstock(
@@ -325,7 +356,7 @@ class OptimalAllocation:
 
 
 def _structured_starts(
-    surface: ResponseSurface, max_multiplier: float
+    surface: AllocatableSurface, max_multiplier: float
 ) -> list[NDArray[np.float64]]:
     """Status quo, equal budget share, and each channel pushed to its upper bound.
 
@@ -353,7 +384,7 @@ def _structured_starts(
 
 
 def _screened_random_starts(
-    surface: ResponseSurface, n_wanted: int, pool: int, max_multiplier: float, seed: int
+    surface: AllocatableSurface, n_wanted: int, pool: int, max_multiplier: float, seed: int
 ) -> list[NDArray[np.float64]]:
     """Draw `pool` budget-feasible points and keep the `n_wanted` scoring highest.
 
@@ -372,7 +403,7 @@ def _screened_random_starts(
 
 
 def _starting_points(
-    surface: ResponseSurface, n_starts: int, max_multiplier: float, seed: int, pool: int
+    surface: AllocatableSurface, n_starts: int, max_multiplier: float, seed: int, pool: int
 ) -> list[NDArray[np.float64]]:
     """All structured starts, topped up with screened random ones to reach `n_starts`."""
     structured = _structured_starts(surface, max_multiplier)
@@ -387,7 +418,7 @@ def _starting_points(
 
 
 def optimal_allocation(
-    surface: ResponseSurface,
+    surface: AllocatableSurface,
     seed: int,
     n_starts: int = 8,
     max_multiplier: float = MAX_MULTIPLIER,
