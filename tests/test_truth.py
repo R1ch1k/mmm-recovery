@@ -1,9 +1,11 @@
 """Tests for interventional ground truth (CLAUDE.md build order, Step 3).
 
-One test here is `xfail(strict=True)`: CLAUDE.md's "multi-start solutions agree within 0.1%"
-is empirically false for this response surface, and the reason is a property of the DGP rather
-than a defect in the solver. It is replaced by a stronger assertion — that the returned
-optimum matches a large-reference optimum — rather than quietly dropped.
+One test here was an `xfail(strict=True)`: CLAUDE.md's "multi-start solutions agree within
+0.1%" is empirically false for this response surface, and the reason is a property of the DGP
+rather than a defect in the solver. **D17 resolved it** — the requirement was wrong, because
+requiring agreement on a non-concave surface is requiring convexity. The standard is now that
+the returned optimum matches a 64-start reference, and the disagreement between starts is
+kept as a reported diagnostic rather than dropped along with the test.
 
 Seeds are fixed throughout and every figure quoted in a docstring was measured.
 """
@@ -22,6 +24,7 @@ from mmm_recovery.dgp import (
     simulate,
 )
 from mmm_recovery.truth import (
+    AGREEMENT_TOLERANCE,
     MAX_MULTIPLIER,
     ResponseSurface,
     Vector,
@@ -338,25 +341,23 @@ def test_the_returned_optimum_matches_a_large_reference_solve(
         assert optimum.total_sales == pytest.approx(reference.total_sales, rel=1e-6)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "CLAUDE.md Step 3 asks that multi-start solutions agree within 0.1%. They do not, and "
-        "the cause is the DGP rather than the solver: Hill with alpha > 1 is S-shaped, TV "
-        "(1.8) and OOH (2.2) both sit there, so the budget-constrained problem is non-concave "
-        "and has real local optima. Measured on media contribution, the spread across starts "
-        "is 0.105-0.156 and only 3 to 7 of 8 starts land within 0.1% of the best. The local "
-        "optima are interpretable, not numerical: they scale one S-shaped channel up and "
-        "starve the rest. Taking the best of many starts is what multi-start is for, and "
-        "test_the_returned_optimum_matches_a_large_reference_solve asserts the stronger "
-        "property that actually matters. Threshold, not bug -- pending a decision."
-    ),
-)
-def test_multi_start_solutions_agree_within_a_tenth_of_a_percent() -> None:
+def test_d17_the_starts_are_recorded_as_disagreeing_rather_than_required_to_agree() -> None:
+    """D17 deleted the agreement requirement; this asserts the disagreement stays *visible*.
+
+    Deleting a failing test can mean two different things, and only one of them is honest.
+    The requirement was wrong — S-shaped saturation makes the objective non-concave, so
+    requiring starts to agree was requiring convexity, and if it held then one start would
+    do. But the disagreement it was detecting is real: on C0 seed 6 the spread across starts
+    is 0.105-0.156 on media contribution and only 3 to 7 of 8 starts reach the best.
+
+    So `spread` and `n_agreeing` are still computed and still reported, and this pins them as
+    live diagnostics rather than vestigial fields. If a future change made them constant, or
+    made the surface concave, that is a finding rather than a silent improvement.
+    """
     surface = response_surface(simulate(condition_params("C0"), 6))
     optimum = optimal_allocation(surface, seed=1234)
-    assert optimum.spread <= 1e-3
-    assert optimum.n_agreeing == optimum.n_starts
+    assert optimum.spread > AGREEMENT_TOLERANCE
+    assert 0 < optimum.n_agreeing < optimum.n_starts
 
 
 def test_a_failed_solve_raises_rather_than_returning_a_number() -> None:

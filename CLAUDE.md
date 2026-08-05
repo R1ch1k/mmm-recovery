@@ -107,7 +107,10 @@ tolerance; setting φ > 0 produces positive correlation between spend and `d_t`.
 Tests: **zeroing the placebo channel leaves noiseless sales bit-identical** (this is the
 single most important test in the repo — it proves β=0 really means zero);
 contributions are non-negative and sum below total sales; the optimiser's solution beats
-status quo; multi-start solutions agree within 0.1%.
+status quo; ~~multi-start solutions agree within 0.1%~~ — **superseded by D17.** That
+requirement was wrong: the surface is non-concave, so requiring the starts to agree is
+requiring convexity. The standard is that the returned optimum matches a 64-start reference.
+Do not re-add the agreement test.
 
 **Step 4 — `estimator.py`.** RidgeMMM: transform, expanding-window CV, random search over
 hyperparameters, non-negative ridge, moving-block bootstrap intervals.

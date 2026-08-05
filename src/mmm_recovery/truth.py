@@ -52,7 +52,12 @@ MROAS_BUMP = 0.1
 """§3's 10% spend increment for the marginal-ROAS difference."""
 
 AGREEMENT_TOLERANCE = 1e-3
-"""Multi-start solutions must agree on total sales within 0.1% (CLAUDE.md, Step 3)."""
+"""Relative gap counted as two starts agreeing, for the `n_agreeing` diagnostic only.
+
+CLAUDE.md Step 3 originally made this a *requirement*. **D17 removed that**: the surface is
+non-concave, so requiring starts to agree is requiring convexity, and if it held then one
+start would suffice. The threshold survives as a way of reporting how much the starts scatter.
+"""
 
 _BUDGET_TOLERANCE = 1e-8
 """Relative slack allowed on the budget equality before a solve is rejected as infeasible."""
@@ -288,6 +293,11 @@ def marginal_roas(surface: ResponseSurface, bump: float = MROAS_BUMP) -> NDArray
 class OptimalAllocation:
     """The best allocation the true response surface admits, and how sure we are of it.
 
+    **`total_sales` is the best value found, not a proven global maximum** (D17). The surface
+    is non-concave; the claim rests on matching a 256-start reference on 100 of 100 trials,
+    which is empirical support rather than proof. `n_agreeing` and `spread` below are what
+    make the non-concavity visible in the output rather than only in this docstring.
+
     Attributes:
         multipliers: (C,) the optimal per-channel spend multipliers.
         total_sales: noiseless total sales under them, £k over the horizon.
@@ -396,12 +406,19 @@ def optimal_allocation(
     is not. Feasibility and the bounds are re-checked independently of `outcome.success`,
     because a solver reporting success is a claim, not evidence.
 
-    **The starts are not required to agree**, and CLAUDE.md's "multi-start solutions agree
+    **The starts are not required to agree** (D17). CLAUDE.md's "multi-start solutions agree
     within 0.1%" does not hold for this surface — only 12-31% of starts land within 0.1% of
     the best, because the problem is genuinely non-concave. Taking the best of many starts is
     what multi-start is *for*. What is required instead, and what the tests assert, is the
     stronger and more useful property: the returned optimum matches a 256-start reference on
     every trial. `n_agreeing` and `spread` are reported so the non-concavity stays visible.
+
+    **Limitation, per D17, and it carries wherever this optimum is reported: global optimality
+    here is empirically supported, not proven.** On a non-concave surface no finite set of
+    starts can prove it. The evidence is that the structured-plus-screened design matched a
+    256-start reference on 100 of 100 trials across five representative cells, where plain
+    Dirichlet starts missed on 8%. That is a strong prior, not a guarantee, and any regret
+    computed against `total_sales` inherits the same status.
 
     Args:
         surface: the true response surface.

@@ -1,9 +1,9 @@
 """Tests for the generating process (CLAUDE.md build order, Step 2).
 
-Two of these are `xfail(strict=True)` rather than assertions. That is deliberate: both
-record a gap between PREREGISTRATION.md and what its own numbers produce, measured rather
-than argued. A strict xfail keeps the gap visible in every test run and turns it into an
-error the moment it silently closes, which a comment or a loosened tolerance would not.
+One test here was an `xfail(strict=True)` recording a measured gap between D11's per-pair
+correlation bound and what the generator actually produces at ρ=0.95. **D16 resolved it** —
+the bound gained a constant systematic allowance and a second, independent assertion on the
+measured systematic component — so the xfail is gone and both are ordinary assertions.
 
 Seeds 0-29 are used throughout. Every figure quoted in a docstring was measured on that
 range, so a change in the generator moves the numbers and the tests notice.
@@ -16,8 +16,10 @@ from mmm_recovery.dgp import (
     BASELINE_LEVEL,
     C0_MEDIA_SHARE_TARGET,
     CONDITION_LEVELS,
+    MEASURED_SYSTEMATIC_CEILING,
     PLACEBO,
     REAL_CHANNELS,
+    SYSTEMATIC_CORRELATION_ALLOWANCE,
     DGPParams,
     condition_params,
     evaluate,
@@ -235,47 +237,74 @@ def worst_pair_deviation(params: DGPParams, target: float, seeds: range) -> floa
     return worst
 
 
-@pytest.mark.parametrize(
-    ("condition", "level", "target"),
-    [("C1", 0.5, 0.5), ("C1", 0.8, 0.8), ("C7", None, 0.7)],
-)
-def test_d11_per_pair_bound_holds(condition: str, level: float | None, target: float) -> None:
-    """D11's bound, ``4·(1-ρ²)/√(T-3)``. Holds at ρ=0.5, ρ=0.8 and the C7 composite.
+CORRELATION_CELLS = [("C1", 0.5, 0.5), ("C1", 0.8, 0.8), ("C1", 0.95, 0.95), ("C7", None, 0.7)]
+"""Every cell with a non-zero ρ target, and therefore every cell D11 and D16 apply to."""
 
-    Worst deviation against bound on seeds 0-29: 0.0856 vs 0.1319 at ρ=0.5, 0.0421 vs 0.0633
-    at ρ=0.8, 0.1251 vs 0.2030 at C7. The C7 case is what D11 was written to fix, and it now
-    passes with margin where the old fixed ±0.10 breached on 2.08% of pairs.
+
+def systematic_pair_deviation(params: DGPParams, target: float, seeds: range) -> float:
+    """Largest displacement of any pair's *seed-averaged* correlation from its target.
+
+    This is the part of the spread averaging cannot remove. Taking the mean over seeds first
+    collapses the sampling term — it falls as 1/√n_seeds — and leaves the generator's own
+    systematic displacement, which is what D16's constant allowance is sized against.
+    """
+    matrices = []
+    for seed in seeds:
+        result = simulate(params, seed)
+        columns = [i for i, n in enumerate(result.channel_names) if n != "placebo"]
+        matrix = np.corrcoef(result.spend[:, columns], rowvar=False)
+        matrices.append(matrix[np.triu_indices(len(columns), k=1)])
+    return float(np.abs(np.asarray(matrices).mean(axis=0) - target).max())
+
+
+@pytest.mark.parametrize(("condition", "level", "target"), CORRELATION_CELLS, ids=str)
+def test_d11_per_pair_bound_holds(condition: str, level: float | None, target: float) -> None:
+    """The bound of D11 as amended by D16. Holds at every ρ target in the grid.
+
+    Worst deviation against bound on seeds 0-29: 0.0856 vs 0.1569 at ρ=0.5, 0.0421 vs 0.0883
+    at ρ=0.8, 0.0268 vs 0.0422 at ρ=0.95, 0.1251 vs 0.2280 at C7. C7 is what D11 was written
+    to fix, where the old fixed ±0.10 breached on 2.08% of pairs; ρ=0.95 is what D16 was
+    written to fix, where D11's pure sampling bound breached at 0.0172.
+
+    The ρ=0.95 figure is 0.0268 here and 0.0281 in D16's text: the deviation grows to 0.0281
+    by seed 49 and is flat from there to seed 199. Both sit under the bound, and the wider
+    range is the one the diagnosis was run on.
     """
     params = condition_params(condition, level)
     bound = per_pair_correlation_bound(target, params.n_weeks)
     assert worst_pair_deviation(params, target, SEEDS) <= bound
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "D11's bound is a pure SAMPLING bound, but the realised per-pair spread also has a "
-        "SYSTEMATIC component of 0.017-0.021 that does not shrink with more seeds. At "
-        "rho=0.95 the sampling term collapses to 0.0172 while the systematic term does not, "
-        "so the bound is breached (worst 0.0281) at this level and nowhere else. Cause is "
-        "identified, not suspected: the pair means are spread 0.0327 against a seed-to-seed "
-        "sd of 0.0030, and their ordering is exactly monotone in the per-channel quarterly "
-        "phase gap (2wk -> 0.965, 4wk -> 0.946, 6wk -> 0.933). Setting quarterly_amplitude "
-        "to 0.03 makes it pass. Recommended fix is a bound of systematic + 4*SE, with the "
-        "systematic allowance measured at 0.025 -- pending a decision."
-    ),
-)
-def test_d11_per_pair_bound_holds_at_the_highest_collinearity() -> None:
-    params = condition_params("C1", 0.95)
-    bound = per_pair_correlation_bound(0.95, params.n_weeks)
-    assert worst_pair_deviation(params, 0.95, SEEDS) <= bound
+@pytest.mark.parametrize(("condition", "level", "target"), CORRELATION_CELLS, ids=str)
+def test_d16_the_systematic_component_stays_inside_its_measured_ceiling(
+    condition: str, level: float | None, target: float
+) -> None:
+    """D16's *separate* assertion, and the reason the constant allowance is not a blank cheque.
+
+    A fixed allowance added to a bound can absorb a growing defect silently — the bound keeps
+    passing while the thing it tolerates gets worse. Measuring the systematic component
+    directly closes that: it is 0.0192, 0.0179, 0.0173 and 0.0176 across the four cells, and
+    this fires the moment the generator pushes any of them past 0.021.
+
+    The two numbers are deliberately not equal. 0.025 is what the bound spends; 0.021 is what
+    the measurement is allowed to be. The gap is margin for seed-to-seed movement in the
+    estimate of a systematic quantity, not headroom for the quantity itself to grow.
+    """
+    params = condition_params(condition, level)
+    measured = systematic_pair_deviation(params, target, SEEDS)
+    assert measured <= MEASURED_SYSTEMATIC_CEILING
+    assert MEASURED_SYSTEMATIC_CEILING < SYSTEMATIC_CORRELATION_ALLOWANCE
 
 
 def test_d11_bound_scales_with_both_series_length_and_target() -> None:
     """The bound is one formula with no magic numbers; these are the values it produces."""
-    assert per_pair_correlation_bound(0.7, 104) == pytest.approx(0.2030, abs=1e-4)
-    assert per_pair_correlation_bound(0.5, 520) == pytest.approx(0.1319, abs=1e-4)
-    assert per_pair_correlation_bound(0.95, 520) == pytest.approx(0.0172, abs=1e-4)
+    assert per_pair_correlation_bound(0.7, 104) == pytest.approx(0.2280, abs=1e-4)
+    assert per_pair_correlation_bound(0.5, 520) == pytest.approx(0.1569, abs=1e-4)
+    assert per_pair_correlation_bound(0.95, 520) == pytest.approx(0.0422, abs=1e-4)
+    # D16's floor: as ρ → 1 the sampling term vanishes and the allowance is all that is left.
+    assert per_pair_correlation_bound(0.999999, 10**8) == pytest.approx(
+        SYSTEMATIC_CORRELATION_ALLOWANCE, abs=1e-6
+    )
     # Shorter series and weaker targets both loosen it; the ordering must never invert.
     assert per_pair_correlation_bound(0.5, 104) > per_pair_correlation_bound(0.5, 520)
     assert per_pair_correlation_bound(0.5, 520) > per_pair_correlation_bound(0.95, 520)
