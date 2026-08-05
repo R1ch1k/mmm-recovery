@@ -721,3 +721,42 @@ diagnosis in Step 4. Re-run properly — every penalty × 10 seeds × the noisy 
 actually uses — **no configuration passes G1**: 0.509 at ρ=1e-6, 0.515 at 1e-4, 0.557 at
 1e-2, 0.893 at 1e-1, 0.987 at 1.0. K3 remedy 1 is refuted on a proper basis rather than on
 one seed.
+
+### D24 — 2026-08-05 — The Meridian anchor on C0. It agrees on G1 and disagrees on G2.
+
+**Run as §4 specifies: C0, 10 seeds, default priors, no tuning.** 4 chains × (500 adapt, 500
+burn-in, 1000 keep). All ten seeds converged, worst R-hat 1.008 against a 1.2 ceiling, so no
+result here is an unmixed chain being reported as a failure of the method. Raw output is
+`results/meridian_c0.json`. 31 minutes total.
+
+| Gate | RidgeMMM (200 seeds) | Meridian (10 seeds) | Threshold |
+|---|---|---|---|
+| G1 median \|relative bias\| | 0.540 fail | **0.456 fail** | < 0.20 |
+| G2 coverage of the 90% interval | 0.417 fail | **0.820 pass** | ≥ 0.80 |
+
+**§4's verify-not-trust purpose is served, and the answer is that C0's contribution failure is
+a property of the method.** Two estimators sharing no code, no optimiser and no inference
+paradigm — penalised least squares with a random search against Hamiltonian Monte Carlo with
+ROI priors — land 8 percentage points apart on the same gate, both roughly 2.5× outside it.
+Meridian passes G1 on 1 of 10 seeds. Its median per-channel bias is +49.7% on TV, +107.1% on
+OOH and −29.5% on search, and at seed 0 it puts media at **41.9% of sales against a true
+25.0%**. Priors did not rescue it, so §4's rescue clause does not trigger for G1.
+
+**The disagreement on G2 is reported as a primary result, per §4.** It is also explained. A
+Bayesian posterior integrates over the transform parameters; §4's bootstrap conditions on one
+point of the hyperparameter plateau and resamples residuals around it, which prices the
+smallest component of the error and omits the largest. Meridian's intervals therefore cover
+while `RidgeMMM`'s do not.
+
+This localises the two failures differently, which matters for what the study claims:
+
+* **G1's failure is structural** and survives a change of estimator, of optimiser and of
+  inference paradigm.
+* **G2's failure is `RidgeMMM`-specific**, an artefact of §4's fixed-hyperparameter bootstrap
+  rather than of MMM. §4 already flagged that construction as understating uncertainty; the
+  anchor shows the understatement is severe enough to flip a gate.
+
+Note what Meridian's G2 pass does and does not mean. Coverage of 0.820 alongside a median
+bias of 0.456 is an interval wide enough to contain a badly wrong point estimate — honest
+uncertainty, not accuracy. Interval widths were not recorded, so the attribution to posterior
+integration is inferred from the coverage-versus-bias pair rather than measured directly.
