@@ -667,6 +667,64 @@ years of weekly data with no confounding, no collinearity and correct functional
 specified model could not identify how much of sales the media caused. The degradation grid
 becomes moot rather than negative. That is a narrower study than planned and a stronger one.
 
+### D25 — 2026-08-05 — Prior art found post hoc; the claim is downgraded accordingly
+
+**Positioning correction, made before publication.** A literature check run after the C0 result
+found Dew, Padilla & Shchetkina (2024), *Your MMM is Broken: Identification of Nonlinear and
+Time-varying Effects in Marketing Mix Models* (Wharton / London Business School, arXiv
+2408.07678). It substantially anticipates the qualitative finding.
+
+They establish that nonlinear and time-varying specifications are frequently not separately
+identifiable; that standard model-selection metrics including cross-validation cannot
+distinguish them; and that the two imply materially different optimal allocations, because
+equivalence under status-quo spending does not imply equivalence under intervention. They
+quantify a dollar "conflation cost" on Nielsen data and propose experimental separation
+tests. They further cite Jin et al. (2017) for the point that the Hill function is poorly
+identified, with different parameter combinations yielding effectively the same function over
+a finite range — which is the plateau documented in D21, described in a 2017 paper that was
+already in this study's own prior-art section.
+
+**§8's prediction that C0 would pass was therefore made without connecting a citation already
+in §1.** That is recorded as an error of literature review, not of measurement.
+
+**What is still claimed, and nothing beyond it:**
+
+1. **Within-family non-identification.** Dew et al. conflate two model *classes*. This study
+   finds failure with the functional form exactly correct and the baseline recovered to
+   1e-13 — a different and starker claim.
+2. **Production tooling.** Their framework is their own Gaussian-process construction. This
+   study ran Google's shipping Meridian on default priors, which failed G1 at 0.456.
+3. **Pre-registration.** Conditions, metrics, thresholds and kill criteria committed before
+   any code, with every deviation dated in this log.
+4. **Distributional decision metrics.** Their conflation cost is a dollar figure for one
+   brand-week. This study reports a beats-status-quo rate of 20% across 200 seeds.
+
+Any framing that presents the identification failure as a discovery is overclaiming and must
+be cut in review. Dew et al. is cited in the README's opening paragraph.
+
+### D26 — 2026-08-05 — Exploratory spend-variation sweep added, labelled non-confirmatory
+
+**Post hoc, and reported separately from the confirmatory results.** Identification depends on
+curvature across the observed spend range, and `spend_log_sd = 0.30` was an assumption
+recorded at the DGP stage rather than a specification. Sweeping it across 0.15 / 0.30 / 0.60 /
+1.00 answers a question the confirmatory study cannot: how much deliberate spend variation a
+team needs before MMM identifies anything.
+
+This condition was **not pre-registered**, was added after C0 failed, and is reported in a
+separate section under an explicit exploratory heading. It sets no gate and revises no
+prediction. Its purpose is practitioner guidance and it converges on the same recommendation
+as Dew et al.'s separation tests, from a different direction.
+
+### D27 — 2026-08-05 — Absolute lift lost leads; normalised regret follows
+
+**Reporting order, not a metric change.** C0's achievable lift is 1.10% of total sales, which
+invites the objection that failing to capture so small a gain is unimpressive. The objection
+is answered by the absolute figure: regret of 2.355 means the recommended allocation does not
+merely miss a 1.10% gain, it costs **2.7% of total sales** against doing nothing.
+
+Per D19 both are reported everywhere. This entry fixes which one leads: the absolute figure,
+with the ratio immediately after. Neither number changes.
+
 ### D22 — 2026-08-05 — The control block gains trend × Fourier interactions
 
 **Corrected; §4's control list was incomplete for §2's own baseline.** §2 builds the baseline

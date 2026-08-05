@@ -114,8 +114,19 @@ Do not re-add the agreement test.
 
 **Step 4 — `estimator.py`.** RidgeMMM: transform, expanding-window CV, random search over
 hyperparameters, non-negative ridge, moving-block bootstrap intervals.
-Tests: on a noiseless C0 draw with T=520, recovers contributions within 5%; bootstrap
-intervals have positive width; the design matrix provably excludes `d_t`.
+Tests: ~~on a noiseless C0 draw with T=520, recovers contributions within 5%~~ — this is the
+strict xfail described below; bootstrap intervals have positive width; the design matrix
+provably excludes `d_t`.
+The control block is **10 columns, not 6** (D22): intercept, trend, 2 Fourier pairs, and
+trend × each Fourier term. §2's baseline is a *product*, so without the interactions the
+controls cannot span it. Every column is still a function of the week index alone.
+
+> **STOP — K1 has fired. Steps 5 and 6 are blocked (D21, D23).**
+> C0 fails all five gates at 200 seeds: G1 0.540, G2 0.417, G3 0.650, G4 2.355, G5 0.200.
+> Under K1, C1–C7 must not be reported and the grid must not run. This is a decision for the
+> pre-registration's author, not something to code around. **Do not amend K1, G1 or G2, and do
+> not "improve the search" as a fix** — better optimisation makes recovery measurably *worse*,
+> which is the K3 anti-strawman result.
 
 **Step 5 — `conditions.py` + `metrics.py`.** Conditions exactly as tabulated in the
 pre-registration. All six gates implemented as pure functions returning pass/fail plus the
@@ -128,6 +139,9 @@ worker count or completion order. Writes tidy long-format `results/grid.csv`, on
 **Gate: run C0 first and confirm K1 before running anything else.**
 
 **Step 7 — K3 remedies** for any failing condition, then the Meridian anchor.
+The anchor was pulled forward to Step 4 because D21 required it before any structural claim.
+`meridian_anchor.py` exists and C0 is done (D24); C3, C6 and C7 are not. The `[meridian]`
+extra is installed — `uv sync --extra meridian`. Budget **186 s per seed**, CPU only.
 
 **Step 8 — `report.py`, `docs/WHEN-TO-TRUST-YOUR-MMM.md`, `README.md`.** In that order.
 
@@ -188,3 +202,13 @@ Deviation — never because it has become inconvenient.
 - **Regret above 100%** silently clipped. Do not clip it. Worse-than-nothing is the most
   interesting outcome in the study.
 - **`except Exception` swallowing real bugs** as condition failures. Let it crash.
+- **Quoting a minimum over noisy tries as though it were a capability.** "The best of N runs
+  reached X" is selection on noise, not a configuration anyone can choose. This has caused two
+  wrong diagnoses here, the second after the first was written down. Carry N and the spread
+  with every extremum, and check the winner's rank on the criterion actually used — in the
+  first instance the low-error draws ranked 57th–157th of 200 on it. Corollary: a lone number
+  that contradicts your own headline is more likely an extremum than a refutation.
+- **Inferring an objective's global shape from points that never went near its optimum.** The
+  cheap decisive test is to *start the optimiser at the known truth* and see whether it stays.
+  Here it walks away — CV 3.63160 → 3.06272 while bias goes 2.4% → 57.3% — which distinguishes
+  non-identification from search failure in one run, where a budget sweep gave only noise.
