@@ -149,11 +149,37 @@ hundred. Never cut seeds below 200 for the placebo conditions.
 
 ---
 
+## Recording a spec-vs-reality gap
+
+When `PREREGISTRATION.md` asserts something the code measurably cannot satisfy, encode it as
+`pytest.mark.xfail(strict=True)` with the measurement in the `reason` string. Not a comment,
+not a loosened assertion, not a deleted test.
+
+The suite stays green, the gap prints on every `pytest -rx` run with its numbers, and it
+becomes an **error** the moment it silently closes. A loosened assertion is how a spec
+violation stops existing.
+
+`pytest -q -rx` is therefore the list of open decisions: each reason carries the diagnosis, the
+numbers and the recommended fix. Delete an xfail when the decision lands and is logged as a
+Deviation — never because it has become inconvenient.
+
+---
+
 ## Failure modes to watch for
 
 - **Silent leakage** of `d_t` or of any true parameter into the estimator. Assert against it.
 - **Optimiser convergence failures** in `truth.py` reported as low regret. Check the
-  SLSQP exit status on every call; a failed solve must raise, not return a number.
+  SLSQP exit status on every call; a failed solve must raise, not return a number. Re-verify
+  feasibility and the bounds independently — a solver reporting success is a claim, not
+  evidence.
+- **An unscaled optimiser objective.** Scale the objective and every constraint to O(1) before
+  handing them to SLSQP. Media contribution is of order 1.3e5, which puts a default
+  finite-difference increment at 6e-9 relative — inside the summation noise of a T×C reduction.
+  It presents as `status 8, "Positive directional derivative for linesearch"`, which reads like
+  a modelling error and is not one. Supply an analytic gradient where one exists.
+- **Tuning the DGP so a threshold passes.** The generator's undocumented knobs (seasonal
+  amplitudes, spend volatility, quarterly amplitude, demand SD) are not free parameters once
+  results exist. If a gate fails because of one, report it; do not turn it.
 - **Bootstrap intervals that don't move** across conditions — usually means the block
   bootstrap is resampling the wrong axis.
 - **Regret above 100%** silently clipped. Do not clip it. Worse-than-nothing is the most
