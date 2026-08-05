@@ -87,7 +87,7 @@ def test_the_fit_entry_point_cannot_receive_a_latent_series() -> None:
         assert name not in parameters
 
 
-def test_the_design_matrix_is_media_columns_plus_the_six_named_controls() -> None:
+def test_the_design_matrix_is_media_columns_plus_the_named_controls() -> None:
     """Third structural guarantee, and it runs on every fit rather than only under pytest."""
     sim = simulate(condition_params("C7"), 0)
     n_channels = sim.spend.shape[1]
@@ -592,3 +592,59 @@ def test_a_noiseless_c0_draw_recovers_contributions_within_five_percent() -> Non
     fit = RidgeMMM().fit(sim.spend, sim.noiseless_sales, seed=0)
     relative = np.abs((fit.contribution - true) / true)
     assert float(np.median(relative)) <= 0.05
+
+
+@pytest.mark.parametrize(("condition", "level"), [("C0", None), ("C2", 104), ("C1", 0.95)])
+def test_d22_the_control_block_spans_the_true_baseline_exactly(
+    condition: str, level: float | int | None
+) -> None:
+    """D22: with the trend × Fourier interactions, the controls can represent §2's baseline.
+
+    §2 builds the baseline as a product, ``B0·(1 + τ·t/T)·season_t``. Expanded, the cross term
+    is ``B0·τ·(t/T)·season'`` — a trend × Fourier interaction that §4's control list did not
+    name. Without those four columns the projection leaves a structured residual of 2.45 £k
+    per week in *every* condition, including the one the study calls clean.
+
+    Asserted to 1e-9 rather than to a tolerance chosen for comfort: the span is either exact
+    or it is not, and here it is exact (measured residual sd 1.4e-13).
+
+    This does not apply to conditions with γ > 0, where the baseline carries ``exp(γ·d_t)``
+    and is genuinely unobservable — that is the confounding C3 and C7 exist to test, and it
+    must stay unrepresentable. `test_the_controls_cannot_absorb_latent_demand` pins that.
+    """
+    params = condition_params(condition, level)
+    sim = simulate(params, 0)
+    controls = control_matrix(params.n_weeks)
+    coefficients, *_ = np.linalg.lstsq(controls, sim.baseline, rcond=None)
+    residual = sim.baseline - controls @ coefficients
+    assert float(np.abs(residual).max()) < 1e-9
+
+
+def test_the_controls_cannot_absorb_latent_demand() -> None:
+    """The other side of D22: completing the span must not hand the estimator the confounder.
+
+    C3's baseline carries ``exp(γ·d_t)`` with γ = 0.5, and `d_t` is an AR(1) the Fourier terms
+    cannot represent. If the enlarged control block could fit it, C3 and C7 would stop
+    measuring confounding and D22 would have quietly broken the study.
+
+    Measured: the residual after projecting C3's baseline onto the controls is 41.7 £k/week,
+    four hundred million times the 1e-13 that C0's baseline leaves.
+    """
+    params = condition_params("C3", 0.6)
+    sim = simulate(params, 0)
+    controls = control_matrix(params.n_weeks)
+    coefficients, *_ = np.linalg.lstsq(controls, sim.baseline, rcond=None)
+    residual = sim.baseline - controls @ coefficients
+    assert float(residual.std()) > 1.0
+
+
+def test_the_bootstrap_docstring_names_the_plateau_as_the_dominant_term() -> None:
+    """The §4 caveat is not "slightly narrow" — the omitted term is the largest one.
+
+    Pinned as a test because this sentence is what stops G2's 32% coverage being read as a
+    bootstrap defect. It has to survive into `metrics.py` and into the write-up.
+    """
+    doc = " ".join((bootstrap_contributions.__doc__ or "").split())
+    assert "dominant" in doc
+    assert "plateau" in doc
+    assert "32.0%" in doc

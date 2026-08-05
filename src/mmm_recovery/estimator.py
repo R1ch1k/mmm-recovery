@@ -87,8 +87,24 @@ CONTROL_COLUMN_NAMES: Final = (
     "sin52_1",
     "cos52_2",
     "sin52_2",
+    "trend_x_cos52_1",
+    "trend_x_sin52_1",
+    "trend_x_cos52_2",
+    "trend_x_sin52_2",
 )
-"""Every non-media column, in order. Each is a function of the week index and nothing else."""
+"""Every non-media column, in order. Each is a function of the week index and nothing else.
+
+The last four are **D22**. §2 builds the baseline as a *product*, ``B0·(1 + τ·t/T)·season_t``,
+which expands to ``B0 + B0·τ·(t/T) + B0·season' + B0·τ·(t/T)·season'``. §4's control list names
+the first three terms and not the fourth, so an additive control block cannot represent the
+baseline of the very world it is being tested in — a structured residual of 2.45 £k/week,
+0.25% of sales, in *every* condition including the clean one. Adding ``trend × Fourier``
+completes the span and drives that residual to 1e-13.
+
+This is not a concession to the estimator. It removes the last implementation-level
+explanation for C0's failure, so what remains is structural. Every column is still a function
+of the week index alone, so the leakage guarantee is untouched.
+"""
 
 N_CONTROL_COLUMNS: Final = len(CONTROL_COLUMN_NAMES)
 
@@ -164,22 +180,31 @@ class Hyperparameters:
 
 
 def control_matrix(n_weeks: int) -> NDArray[np.float64]:
-    """(T, 6) intercept, linear trend and 2 Fourier pairs at period 52.
+    """(T, 10) intercept, linear trend, 2 Fourier pairs at period 52, and trend × Fourier.
 
     **The whole argument list is `n_weeks`.** Every column is a function of the week index, so
     no observed or latent series can enter the control block, whatever a future caller passes
-    around it. That is the first of the three structural guarantees in the module docstring.
+    around it. That is the first of the three structural guarantees in the module docstring,
+    and D22's four extra columns do not weaken it — a product of two functions of ``t`` is
+    still a function of ``t``.
 
     The trend runs 0 to 1 across the horizon rather than 0 to T, so its column is O(1) like
     every other and the ridge penalty's scale does not depend on the length of the series.
+    That choice also keeps the interaction columns O(1), which matters more now that there
+    are four of them.
+
+    See `CONTROL_COLUMN_NAMES` for why the interactions are there.
     """
     if n_weeks < WEEKS_PER_YEAR:
         raise ValueError(f"n_weeks must cover at least one seasonal cycle; got {n_weeks}")
     weeks = np.arange(n_weeks, dtype=np.float64)
-    columns = [np.ones(n_weeks, dtype=np.float64), weeks / float(n_weeks - 1)]
+    trend = weeks / float(n_weeks - 1)
+    fourier: list[NDArray[np.float64]] = []
     for harmonic in range(1, FOURIER_PAIRS + 1):
         angle = 2.0 * np.pi * harmonic * weeks / WEEKS_PER_YEAR
-        columns.extend((np.cos(angle), np.sin(angle)))
+        fourier.extend((np.cos(angle), np.sin(angle)))
+    columns = [np.ones(n_weeks, dtype=np.float64), trend, *fourier]
+    columns.extend(trend * column for column in fourier)
     return np.column_stack(columns)
 
 
@@ -216,7 +241,7 @@ def saturate_columns(
 
 
 def design_matrix(spend: NDArray[np.float64], hyper: Hyperparameters) -> NDArray[np.float64]:
-    """(T, C + 6) the full design: saturated adstocked spend, then the controls.
+    """(T, C + 10) the full design: saturated adstocked spend, then the controls.
 
     Raises:
         ValueError: if the assembled matrix is not exactly C media columns plus the six
@@ -513,7 +538,7 @@ class MMMFit:
 
     Attributes:
         hyperparameters: the winning random-search draw.
-        coefficients: (C + 6,) the full coefficient vector, media block first.
+        coefficients: (C + 10,) the full coefficient vector, media block first.
         surface: the fitted response surface, ready for `recommended_allocation`.
         contribution: (C,) estimated incremental contribution, £k over the horizon.
         contribution_interval: (C, 2) the 5th and 95th bootstrap percentiles of the same,
@@ -576,15 +601,28 @@ def bootstrap_contributions(
     intervals: the hyperparameters are held fixed at the selected draw, so this understates
     total uncertainty.** The transform (λ̂, α̂, κ̂) is treated as known when it was in fact
     chosen from the same data, and the selection step contributes variance that never appears
-    here. Intervals from this are therefore too narrow by an unmeasured amount, and empirical
-    coverage below nominal is the expected direction of the error rather than a surprise.
+    here.
+
+    **The limitation is more severe than "understates uncertainty" suggests, and this is the
+    load-bearing caveat on G2.** The omitted term is not a secondary correction — on this
+    problem it is the *dominant* source of uncertainty. The hyperparameter surface is a
+    plateau: 177 of 780 points on a sweep of TV's (α, κ) sit within 1% of the true
+    parameters' CV RMSE while implying channel contributions spanning 43,938 to 240,522 £k, a
+    5.5× range. Conditioning on one point of that plateau and resampling residuals around it
+    prices the *smallest* component of the error and omits the largest.
+
+    So the interval this produces answers "how much would this estimate move if the noise had
+    been drawn differently", not "how much do we know about the contribution". Measured
+    consequence: G2 coverage on C0 is 32.0% against an 80% threshold. That number is not
+    evidence of a bootstrap defect — it follows directly from pricing the wrong term, and it
+    is what §4's construction guarantees on a non-identified surface.
 
     Holding them fixed is what §4 specifies and it is also what makes the grid affordable —
     ``X`` never changes across replicates, so ``X'X`` is computed once and each replicate is a
     single 11×11 solve.
 
     Args:
-        design: (T, C + 6) the design at the selected hyperparameters.
+        design: (T, C + 10) the design at the selected hyperparameters.
         sales: (T,) observed sales, £k per week.
         surface: the fitted surface, for its adstocked spend and saturation.
         ridge_penalty: the selected penalty, applied unchanged to every replicate.

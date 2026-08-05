@@ -605,3 +605,119 @@ marginally reduces how informative G3's rank metric is — OOH is always last.
 β is not adjusted to fix this, because D4 locks the table and because a channel that should
 be defunded is a realistic and useful thing for the study to contain. It is a finding for
 the practitioner-facing write-up, not a defect.
+
+### D21 — 2026-08-05 — K1 has fired on C0. The gate is not amended.
+
+**Kill criterion triggered.** C0 fails G1 (median bias 64.0% against a 20% threshold) and G2
+(coverage 32.0% against 80%) over 10 seeds. Under K1, C1–C7 are not reported and the grid is
+blocked.
+
+**K1 is not amended, and its threshold is not moved.** The question raised was whether C0's
+failure means the harness is wrong, as K1 assumes, or whether "a clean-world MMM cannot
+identify the media level" is itself the study's result. It is the result. But that is
+reported by recording that K1 fired and explaining the mechanism, not by rewriting the gate
+that fired. A pre-registered study which halts at its validity gate and explains why is a
+complete result; one which reinterprets its kill criterion at the moment of firing is not.
+
+**Mechanism, as measured.** The estimator trades media level against the free intercept:
+media error −4.6 £k/week against baseline error +4.6, cancelling to −0.00 in predicted sales.
+Starting Nelder-Mead at the true hyperparameters walks away from them — CV improves
+3.63160 → 3.06272 while median bias goes 2.4% → 57.3%. Sweeping TV's (α, κ) with all else at
+truth puts 177 of 780 points within 1% of truth's CV while TV's contribution ranges
+43,938–240,522 £k. Differential evolution beats truth on fit and loses to random search on
+recovery.
+
+The decisive signature is the plateau, not the cancellation: the true parameters are not a
+CV optimum, and a 5.5× range of channel contribution is indistinguishable on fit. A defect
+produces a specific wrong answer; non-identification produces a flat direction. Structurally
+this is expected — Hill saturation contains a near-constant function as a limiting case, and
+a constant is collinear with a free intercept, so the media level is identified only through
+curvature across the observed spend range.
+
+A 13-agent adversarial audit raised 9 candidate implementation defects; all 9 were refuted.
+The bounded-ridge solve was verified three independent ways and reproduces bit-identically
+via an eigendecomposition path.
+
+**K3 is answered in the estimator's favour.** Remedy 1 (tighter regularisation) is
+monotonically worse. Remedy 3 is inapplicable at C0, where γ = φ = 0. Remedy 2 is a Step 7
+item and rescuing the harness gate with a prior would mean C0 validates only when the
+estimator is told the answer. The 200-draw random search is not a weakened MMM but an
+accidentally flattering one.
+
+**Required before any structural claim is made:**
+
+1. **Reconcile the remedy-1 sweep.** It begins at 13.8% median bias, below G1's 20%
+   threshold, which contradicts the 64.0% headline. Until it is established that the two
+   figures measure different configurations, the C0 verdict is not settled.
+2. **Fix the additive/multiplicative control mismatch first.** §2's baseline is a product
+   while §4's controls are additive, leaving a structured 2.45 £k residual in every
+   condition. It is assessed as not the cause, and probably is not. But the claim about to be
+   made is that a *clean* world defeats MMM, and that claim is only as strong as C0's
+   cleanliness. Implementation-level explanations are exhausted before a structural one is
+   asserted. Add the trend×Fourier interaction columns and re-run C0.
+3. **If C0 then passes**, K1 is discharged exactly as designed and the grid proceeds.
+4. **If C0 still fails**, run the Meridian anchor on C0. §4 already names C0 as an anchor
+   condition and already pre-commits the interpretation: if Meridian's priors rescue what
+   RidgeMMM cannot, the prior is supplying information the data does not contain. No
+   amendment is required; the machinery was written for this case.
+
+**If the failure survives all four steps**, the study's reported outcome is that a
+pre-registered stress test of MMM never reached its stress conditions, because under ten
+years of weekly data with no confounding, no collinearity and correct functional forms, the
+specified model could not identify how much of sales the media caused. The degradation grid
+becomes moot rather than negative. That is a narrower study than planned and a stronger one.
+
+### D22 — 2026-08-05 — The control block gains trend × Fourier interactions
+
+**Corrected; §4's control list was incomplete for §2's own baseline.** §2 builds the baseline
+as a *product*, `B0·(1 + τ·t/T)·season_t`, which expands to
+`B0 + B0·τ·(t/T) + B0·season' + B0·τ·(t/T)·season'`. §4 names controls covering the first
+three terms and not the fourth, so the estimator's control block could not represent the
+baseline of the world it is tested in — a structured residual of 2.45 £k per week, 0.25% of
+sales, present in *every* condition including the clean one.
+
+Four `trend × Fourier` columns are added, taking the control block from 6 columns to 10.
+Measured: the projection residual on C0's baseline falls from sd 2.45 £k to 1.4e-13, and at
+the exactly true hyperparameters contribution recovery becomes exact (β̂ = β to printed
+precision) where it was 3.7% biased.
+
+**This is not a concession to the estimator, and it did not rescue C0.** D21 required
+implementation-level explanations to be exhausted before a structural claim is made, and this
+was the last one. Its measured effect on the failure is 0.641 → 0.640 median relative bias
+under noise, and 0.580 → 0.503 noiseless. The C0 gates fail with it in place; see D23.
+
+Two properties are asserted permanently rather than assumed. The control block now spans C0's
+and C2's baselines to 1e-9. It still **cannot** absorb C3's `exp(γ·d_t)`, which leaves a
+41.7 £k residual — that is the confounding C3 and C7 exist to test, and completing the
+seasonal span must not have handed the estimator its confounder. Every column remains a
+function of the week index alone, so the leakage guarantee of rule 3 is untouched.
+
+### D23 — 2026-08-05 — C0 fails all five gates at 200 seeds. The 13.8% is reconciled.
+
+**K1 stands, on the full seed count and with D22 in place.**
+
+| Gate | C0 | Threshold | |
+|---|---|---|---|
+| G1 median \|relative bias\| | 0.540 | < 0.20 | fail |
+| G2 coverage of the 90% interval | 0.417 | ≥ 0.80 | fail |
+| G3 median Spearman rank | 0.650 | ≥ 0.80 | fail |
+| G4 median allocation regret | 2.355 | < 0.20 | fail |
+| G5 beats status quo | 0.200 | ≥ 0.90 | fail |
+
+Only 9 of 200 seeds pass G1 individually, and **160 of 200 have regret above 100%** — the
+model's advice is worse than not acting. The decision gates fail harder than the estimation
+gates, which is the ordering the study was built to detect, arriving at the clean condition.
+
+**D19's rule applied:** median regret of 2.355 is 2.7% of total sales in absolute terms
+(p10–p90: 0.8%–6.1%), because C0's achievable lift is only 1.10% of sales. The correct reading
+is "loses more than twice what was available there", not "destroys 235% of the business".
+
+**The 13.8% is reconciled and does not survive.** It was `(noiseless, one particular draw
+stream, seed 0 alone)` — the single most favourable cell measured. The ten per-seed values on
+that same row are 0.138, 0.408, 0.544, 0.617, 0.785, 1.681, 0.507, 0.798, 0.275, 0.494, whose
+median is 0.526. It was a minimum over ten noisy draws quoted as though it were a
+configuration, which is the same selection-on-noise error that produced the first wrong
+diagnosis in Step 4. Re-run properly — every penalty × 10 seeds × the noisy series the grid
+actually uses — **no configuration passes G1**: 0.509 at ρ=1e-6, 0.515 at 1e-4, 0.557 at
+1e-2, 0.893 at 1e-1, 0.987 at 1.0. K3 remedy 1 is refuted on a proper basis rather than on
+one seed.
