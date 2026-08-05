@@ -26,6 +26,9 @@ dev = [
     "pytest-cov>=5.0",
     "ruff>=0.6",
     "mypy>=1.11",
+    # Real stubs, so scipy calls are actually type-checked rather than waved through
+    # with ignore_missing_imports.
+    "scipy-stubs>=1.14",
 ]
 
 [build-system]
@@ -48,6 +51,12 @@ src = ["src", "tests"]
 # NPY is deliberate: NPY002 bans the legacy global np.random seed API, which is
 # the single easiest way to break the determinism rule in CLAUDE.md.
 select = ["E", "W", "F", "I", "N", "UP", "B", "SIM", "RUF", "NPY"]
+# RUF001-003 flag Greek letters as homoglyphs of Latin ones (α looks like a). That rule
+# guards against confusable identifiers in hostile source; here the Greek symbols are the
+# notation PREREGISTRATION.md itself uses for λ, α, κ, β, ρ, φ, γ and τ, and matching the
+# spec character-for-character is worth more than the homoglyph check in a repo with no
+# untrusted contributors.
+ignore = ["RUF001", "RUF002", "RUF003"]
 
 [tool.mypy]
 python_version = "3.12"
