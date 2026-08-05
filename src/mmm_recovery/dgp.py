@@ -41,6 +41,25 @@ WEEKS_PER_QUARTER = 13
 _AR_BURN_IN = 500
 _PLACEBO_WEIGHT_CEILING = 1.0 / np.sqrt(2.0)
 
+C0_MEDIA_SHARE_TARGET = 0.25
+"""§2's calibration target, which D9 restores by correcting B0."""
+
+CALIBRATION_SEEDS = 200
+"""Seeds the B0 solve runs over — the same count C0 uses in the grid."""
+
+BASELINE_LEVEL = 682.5179
+"""B0 in £k per week (D9), the numerical solution of ``solve_baseline_level()``.
+
+§2's stated B0 of 1000 gives a C0 media share of 18.57%, not the ≈25% the same section
+claims; the two were over-determined together with the channel table. β is locked by D4, so
+B0 is the only lever that moves the ratio without touching ground truth — baseline is exactly
+linear in B0, and spend and contributions are bit-identical across it.
+
+The constant is committed rather than solved at import so that `simulate` stays fast and
+deterministic; `test_the_committed_baseline_level_reproduces_the_solve` re-runs the solver and
+checks it lands here, so the value is derived rather than asserted.
+"""
+
 
 @dataclass(frozen=True)
 class Channel:
@@ -93,8 +112,8 @@ class DGPParams:
     n_weeks: int = 520
     """T, weeks of observation."""
 
-    baseline_level: float = 1000.0
-    """B0, £k per week."""
+    baseline_level: float = BASELINE_LEVEL
+    """B0, £k per week. D9-corrected from §2's 1000; see `BASELINE_LEVEL`."""
 
     trend: float = 0.15
     """τ, fractional baseline growth across the full span."""
@@ -524,6 +543,53 @@ def media_share(result: SimResult) -> float:
     return float(result.contributions.sum() / result.noiseless_sales.sum())
 
 
+def solve_baseline_level(
+    target_share: float = C0_MEDIA_SHARE_TARGET, n_seeds: int = CALIBRATION_SEEDS
+) -> float:
+    """Solve numerically for the B0 that puts C0's mean media share on target (D9).
+
+    Baseline is exactly linear in B0 and media contribution does not depend on it at all, so
+    a *single* draw's share inverts in closed form. The mean across draws does not: a mean of
+    ratios is not a ratio of means, so the target is the root of ``mean_s[share_s(B0)] = t``
+    and is found rather than derived. The two closed forms differ by which draw you pick —
+    seed 0 alone gives 680.8, the 30-seed mean gives 684.1, and neither is the mean's root.
+
+    Args:
+        target_share: media contribution as a fraction of total noiseless sales.
+        n_seeds: seeds 0..n_seeds-1 to average over.
+
+    Returns:
+        B0 in £k per week.
+    """
+
+    def gap(level: float) -> float:
+        params = DGPParams(baseline_level=level)
+        realised = [media_share(simulate(params, seed)) for seed in range(n_seeds)]
+        return float(np.mean(realised)) - target_share
+
+    return float(brentq(gap, 100.0, 5000.0, xtol=1e-10))
+
+
+def per_pair_correlation_bound(rho_target: float, n_weeks: int) -> float:
+    """D11's per-pair tolerance: ``4·(1 - ρ²)/√(T - 3)``, four sampling standard errors.
+
+    Replaces D5's fixed ±0.10, which was tighter than sampling noise at T=104. One formula,
+    scaling with both T and ρ; a four-sigma breach is about 6e-5 per pair, so the assertion
+    still fires on a real defect.
+
+    Known gap, measured and reported rather than absorbed: this is a *sampling* bound, and the
+    realised spread also has a **systematic** component of 0.017-0.021 that does not shrink
+    with more seeds. It comes from the per-channel quarterly phases and is ordered exactly by
+    phase gap. At ρ=0.95 the sampling term falls to 0.017 while the systematic term does not,
+    so the bound is breached there and nowhere else.
+    """
+    if not 0.0 <= rho_target < 1.0:
+        raise ValueError(f"rho_target must lie in [0, 1); got {rho_target}")
+    if n_weeks <= 3:
+        raise ValueError(f"n_weeks must exceed 3 for the correlation SE; got {n_weeks}")
+    return float(4.0 * (1.0 - rho_target**2) / np.sqrt(n_weeks - 3))
+
+
 def mean_pairwise_spend_correlation(result: SimResult) -> float:
     """Mean pairwise Pearson correlation of spend *levels* across the real channels (D5).
 
@@ -595,6 +661,8 @@ def condition_params(condition: str, level: float | int | None = None) -> DGPPar
                 collinearity=0.7,
                 demand_coefficient=0.5,
                 endogeneity=0.6,
-                placebo_coupling=0.6,
+                # D10: 0.45 rather than 0.6, which was unreachable on 1.8% of seeds. It is
+                # also C6's middle level, so C7 decomposes against C6[0.45].
+                placebo_coupling=0.45,
                 misspecified=True,
             )

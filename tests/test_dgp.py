@@ -13,6 +13,8 @@ import numpy as np
 import pytest
 
 from mmm_recovery.dgp import (
+    BASELINE_LEVEL,
+    C0_MEDIA_SHARE_TARGET,
     CONDITION_LEVELS,
     PLACEBO,
     REAL_CHANNELS,
@@ -21,15 +23,13 @@ from mmm_recovery.dgp import (
     evaluate,
     mean_pairwise_spend_correlation,
     media_share,
+    per_pair_correlation_bound,
     simulate,
+    solve_baseline_level,
 )
 
 SEEDS = range(30)
 ALL_CELLS = [(cond, level) for cond, levels in CONDITION_LEVELS.items() for level in levels]
-
-# C7 asks for a placebo coupling of 0.6 that the draw cannot always deliver; see
-# test_c7_placebo_coupling_is_infeasible_on_some_seeds for the measurement.
-C7_INFEASIBLE_SEED = 71
 
 
 # --------------------------------------------------------------------------------------
@@ -133,30 +133,48 @@ def test_zeroing_the_placebo_leaves_noiseless_sales_bit_identical(condition: str
 # --------------------------------------------------------------------------------------
 
 
-def test_c0_media_share_is_the_value_the_prereg_numbers_actually_produce() -> None:
-    """Records the realised C0 media share: 18.57% (seeds 0-29, sd 0.09%).
-
-    Not 25%. B0 = 1000, τ = 0.15 and the §2 channel table are jointly over-determined with
-    the "≈25% of total sales" calibration claim, and they disagree. See the companion xfail
-    below, and note that at mean spend the five channels sit at 46%, 48%, 52%, 45% and 17%
-    of their β, so no combination of adstock or Jensen effects closes the gap.
-    """
-    shares = [media_share(simulate(condition_params("C0"), seed)) for seed in SEEDS]
-    assert float(np.mean(shares)) == pytest.approx(0.1857, abs=0.002)
-
-
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "PREREGISTRATION.md §2 claims media contribution is calibrated to ~25% of total "
-        "sales, but its own B0, tau and channel table give 18.57%. D4 fixes beta, so the "
-        "only lever that does not touch ground truth is B0, which would have to be 680.8 "
-        "rather than 1000. Pending a decision; recorded here so the gap cannot be forgotten."
-    ),
-)
 def test_c0_media_share_meets_the_prereg_25_percent_target() -> None:
-    shares = [media_share(simulate(condition_params("C0"), seed)) for seed in SEEDS]
-    assert float(np.mean(shares)) == pytest.approx(0.25, abs=0.02)
+    """D9: C0's realised media share is 25.0% within ±0.05pp, in and out of sample.
+
+    Asserted over seeds 0-199 — the count C0 actually runs, and the set B0 was solved on —
+    and again over seeds 200-399, which the solve never saw. The out-of-sample figure lands
+    at 24.9951%, so the calibration is a property of the generator rather than of the
+    particular draws it was fitted to.
+    """
+    params = condition_params("C0")
+    assert params.baseline_level == BASELINE_LEVEL
+
+    in_sample = float(np.mean([media_share(simulate(params, s)) for s in range(200)]))
+    out_of_sample = float(np.mean([media_share(simulate(params, s)) for s in range(200, 400)]))
+    assert abs(in_sample - C0_MEDIA_SHARE_TARGET) <= 0.0005
+    assert abs(out_of_sample - C0_MEDIA_SHARE_TARGET) <= 0.0005
+
+
+def test_the_committed_baseline_level_reproduces_the_solve() -> None:
+    """D9 asked for a numerical solve, not a hard-coded constant. This is the difference.
+
+    `BASELINE_LEVEL` is committed so `simulate` stays fast and deterministic, but it has to be
+    the number the solver actually returns. Re-running the solve here is what makes it derived
+    rather than asserted — and it fails if any change to the DGP moves the calibration.
+    """
+    assert solve_baseline_level() == pytest.approx(BASELINE_LEVEL, abs=1e-3)
+
+
+def test_baseline_is_exactly_linear_in_b0_and_contributions_are_invariant() -> None:
+    """Why B0 is the safe lever, and the resolution of the 680.8-versus-684.0 discrepancy.
+
+    Baseline scales bit-exactly with B0 while spend and contributions do not move at all, so
+    B0 changes the media *ratio* without touching any ground truth. Nothing in the calibration
+    is non-linear in B0; the two closed-form answers differed only in which draws they used —
+    seed 0 alone has a share of 18.496% and gives 680.8, the 30-seed mean is 18.568% and gives
+    684.1. Since a mean of ratios is not a ratio of means, neither is the mean's root, which
+    is why D9 asked for the solve.
+    """
+    full = simulate(DGPParams(baseline_level=1000.0), 0)
+    half = simulate(DGPParams(baseline_level=500.0), 0)
+    assert np.array_equal(full.spend, half.spend)
+    assert np.array_equal(full.contributions, half.contributions)
+    assert np.array_equal(half.baseline, full.baseline * 0.5)
 
 
 @pytest.mark.parametrize(("condition", "level"), ALL_CELLS, ids=lambda v: str(v))
@@ -165,21 +183,21 @@ def test_media_share_is_measured_not_asserted_away_from_c0(
 ) -> None:
     """D4: the share drifts everywhere except C0, and the drift is described, not corrected.
 
-    Measured means over seeds 0-29: C0 18.57%, C1 18.57-18.58%, C2 18.35-18.53%,
-    C3 18.43-18.47%, C4 17.17%, C5/C6 18.56%, C7 17.02%. The two misspecified conditions
-    are the movers; the confounded ones barely budge, which is the opposite of the direction
-    D4 anticipated for C3 and is reported rather than adjusted.
+    Measured means over seeds 0-29 after D9: C0 25.04%, C1 25.04-25.06%, C2 24.77-24.99%,
+    C3 24.87-24.92%, C4 23.29%, C5/C6 25.03%, C7 23.10%. The two misspecified conditions are
+    the only real movers, and C3 still drifts down rather than up (D13).
+
+    B0 changes none of this underneath. Contributions do not depend on B0 at all, so the
+    ratio of a condition's media contribution to C0's is invariant: C4/C0 was 0.9089 before
+    D9 and is 0.9090 after; C7/C0 was 0.8992 and is 0.8992. Raising the share from 18.6% to
+    25% simply expresses the same shortfall in more percentage points.
 
     Only a wide sanity band is asserted here. A tight assertion would be a second, unlogged
     calibration target smuggled in under a test.
     """
     params = condition_params(condition, level)
-    shares = [
-        media_share(simulate(params, seed))
-        for seed in SEEDS
-        if not (condition == "C7" and seed == C7_INFEASIBLE_SEED)
-    ]
-    assert 0.10 < float(np.mean(shares)) < 0.30
+    shares = [media_share(simulate(params, seed)) for seed in SEEDS]
+    assert 0.15 < float(np.mean(shares)) < 0.35
     assert all(0.0 < share < 1.0 for share in shares)
 
 
@@ -205,43 +223,67 @@ def test_d5_mean_pairwise_correlation_holds_for_the_c7_composite() -> None:
         assert abs(realised - 0.7) <= 0.02
 
 
-@pytest.mark.parametrize(("condition", "level"), [("C1", 0.5), ("C1", 0.8), ("C1", 0.95)])
-def test_d5_no_individual_pair_strays_beyond_ten_points(condition: str, level: float) -> None:
-    """The per-pair half of D5. Holds at every C1 level, but only just at ρ=0.5.
-
-    Worst deviations on seeds 0-29: 0.0856 at ρ=0.5, 0.0421 at ρ=0.8, 0.0268 at ρ=0.95.
-    The ρ=0.5 figure has the least headroom; over 200 seeds it reaches 0.1018, so 0.1% of
-    pairs already breach at T=520. The tolerance is comfortable here, but not by much.
-    """
-    params = condition_params(condition, level)
-    for seed in SEEDS:
+def worst_pair_deviation(params: DGPParams, target: float, seeds: range) -> float:
+    """Largest absolute deviation of any pairwise spend correlation from its target."""
+    worst = 0.0
+    for seed in seeds:
         result = simulate(params, seed)
         columns = [i for i, n in enumerate(result.channel_names) if n != "placebo"]
         matrix = np.corrcoef(result.spend[:, columns], rowvar=False)
         pairs = matrix[np.triu_indices(len(columns), k=1)]
-        assert float(np.abs(pairs - level).max()) <= 0.10
+        worst = max(worst, float(np.abs(pairs - target).max()))
+    return worst
+
+
+@pytest.mark.parametrize(
+    ("condition", "level", "target"),
+    [("C1", 0.5, 0.5), ("C1", 0.8, 0.8), ("C7", None, 0.7)],
+)
+def test_d11_per_pair_bound_holds(condition: str, level: float | None, target: float) -> None:
+    """D11's bound, ``4·(1-ρ²)/√(T-3)``. Holds at ρ=0.5, ρ=0.8 and the C7 composite.
+
+    Worst deviation against bound on seeds 0-29: 0.0856 vs 0.1319 at ρ=0.5, 0.0421 vs 0.0633
+    at ρ=0.8, 0.1251 vs 0.2030 at C7. The C7 case is what D11 was written to fix, and it now
+    passes with margin where the old fixed ±0.10 breached on 2.08% of pairs.
+    """
+    params = condition_params(condition, level)
+    bound = per_pair_correlation_bound(target, params.n_weeks)
+    assert worst_pair_deviation(params, target, SEEDS) <= bound
 
 
 @pytest.mark.xfail(
     strict=True,
     reason=(
-        "D5's per-pair tolerance of +/-0.10 is tighter than sampling noise permits at "
-        "C7's T=104. Worst pair deviation is 0.1251 on seeds 0-29 and 0.1648 over 200, "
-        "with 2.08% of pairs breaching. A matched control with rho=0.7 and T=104 but "
-        "none of C7's other knobs reaches 0.1495 and breaches on 1.70%, so this is the "
-        "short series, not the composite. Theoretical SE of a single correlation at "
-        "T=104 is 0.0507, making +/-0.10 a two-sigma bound that roughly 2% of pairs must "
-        "exceed. Threshold, not bug — pending a decision."
+        "D11's bound is a pure SAMPLING bound, but the realised per-pair spread also has a "
+        "SYSTEMATIC component of 0.017-0.021 that does not shrink with more seeds. At "
+        "rho=0.95 the sampling term collapses to 0.0172 while the systematic term does not, "
+        "so the bound is breached (worst 0.0281) at this level and nowhere else. Cause is "
+        "identified, not suspected: the pair means are spread 0.0327 against a seed-to-seed "
+        "sd of 0.0030, and their ordering is exactly monotone in the per-channel quarterly "
+        "phase gap (2wk -> 0.965, 4wk -> 0.946, 6wk -> 0.933). Setting quarterly_amplitude "
+        "to 0.03 makes it pass. Recommended fix is a bound of systematic + 4*SE, with the "
+        "systematic allowance measured at 0.025 -- pending a decision."
     ),
 )
-def test_d5_per_pair_tolerance_holds_for_the_c7_composite() -> None:
-    params = condition_params("C7")
-    for seed in SEEDS:
-        result = simulate(params, seed)
-        columns = [i for i, n in enumerate(result.channel_names) if n != "placebo"]
-        matrix = np.corrcoef(result.spend[:, columns], rowvar=False)
-        pairs = matrix[np.triu_indices(len(columns), k=1)]
-        assert float(np.abs(pairs - 0.7).max()) <= 0.10
+def test_d11_per_pair_bound_holds_at_the_highest_collinearity() -> None:
+    params = condition_params("C1", 0.95)
+    bound = per_pair_correlation_bound(0.95, params.n_weeks)
+    assert worst_pair_deviation(params, 0.95, SEEDS) <= bound
+
+
+def test_d11_bound_scales_with_both_series_length_and_target() -> None:
+    """The bound is one formula with no magic numbers; these are the values it produces."""
+    assert per_pair_correlation_bound(0.7, 104) == pytest.approx(0.2030, abs=1e-4)
+    assert per_pair_correlation_bound(0.5, 520) == pytest.approx(0.1319, abs=1e-4)
+    assert per_pair_correlation_bound(0.95, 520) == pytest.approx(0.0172, abs=1e-4)
+    # Shorter series and weaker targets both loosen it; the ordering must never invert.
+    assert per_pair_correlation_bound(0.5, 104) > per_pair_correlation_bound(0.5, 520)
+    assert per_pair_correlation_bound(0.5, 520) > per_pair_correlation_bound(0.95, 520)
+    for bad in (-0.1, 1.0, 1.5):
+        with pytest.raises(ValueError, match="rho_target"):
+            per_pair_correlation_bound(bad, 520)
+    with pytest.raises(ValueError, match="n_weeks"):
+        per_pair_correlation_bound(0.5, 3)
 
 
 def test_c0_spend_is_effectively_uncorrelated() -> None:
@@ -330,21 +372,25 @@ def test_c5_placebo_spend_is_independent() -> None:
         assert abs(correlation) < 0.2
 
 
-def test_c7_placebo_coupling_is_infeasible_on_some_seeds() -> None:
-    """C7 cannot always deliver its D1 coupling of 0.6, and says so instead of pretending.
+def test_c7_constructs_on_every_seed_it_will_actually_use() -> None:
+    """D10: C7's coupling of 0.45 is reachable on all 500 seeds C7 runs at.
 
-    Measured: `simulate` raises on 9 of the first 500 seeds — [71, 136, 156, 221, 225, 367,
-    418, 438, 450], a rate of 1.8%. C7 is specified at 500 seeds, so the grid would stop
-    roughly nine times. The achievable ceiling across 300 seeds averages 0.704 with sd 0.047
-    and a minimum of 0.567; every target up to 0.55 is reachable on all of them. C6 is
-    unaffected — its ceiling never drops below 0.629 — so this is specific to C7, where
-    φ=0.6 dilutes the placebo's seasonal correlation and T=104 makes the ceiling volatile.
-
-    This test pins the diagnosis. It is expected to be deleted once the C7 coupling level is
-    decided, and it will fail loudly if the generator starts silently coping instead.
+    The old level of 0.6 raised on 9 of those 500 — seeds 71, 136, 156, 221, 225, 367, 418,
+    438 and 450 — because φ=0.6 dilutes the placebo's seasonal correlation and T=104 makes
+    the achievable ceiling volatile (mean 0.704, sd 0.047, min 0.567 across 300 seeds).
+    Measured failure counts at the four candidate levels: 0.45 → 0, 0.5 → 0, 0.55 → 1,
+    0.6 → 9. This runs the full 500, not a sample, because a 1.8% failure rate is exactly the
+    kind that a 30-seed test misses.
     """
-    with pytest.raises(ValueError, match="placebo coupling"):
-        simulate(condition_params("C7"), C7_INFEASIBLE_SEED)
+    params = condition_params("C7")
+    assert params.placebo_coupling == 0.45
+    for seed in range(500):
+        simulate(params, seed)
+
+
+def test_c7_placebo_coupling_matches_a_c6_level_so_it_decomposes() -> None:
+    """D10's second reason: an interaction is only isolable when each knob has a solo level."""
+    assert condition_params("C7").placebo_coupling in CONDITION_LEVELS["C6"]
 
 
 # --------------------------------------------------------------------------------------

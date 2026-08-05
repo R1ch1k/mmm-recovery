@@ -409,3 +409,103 @@ consistency check.
 x̃_t = (1−λ)·x_t + λ·x̃_{t−1}. This is the Meridian convention rather than Robyn's
 unnormalised form, and it is the right one here: without normalisation a larger λ inflates
 the adstocked signal and confounds λ with β.
+
+### D9 — 2026-08-05 — B0 corrected so C0 media share is 25.0%
+
+**Corrected.** At B0 = 1000 the realised C0 media share is 18.57%, not the ≈25% §2 claims.
+The channel table and the calibration claim were over-determined; β is locked by D4, so B0
+is the only lever that moves the ratio without touching ground truth. Contributions are
+unchanged in absolute terms.
+
+The correction is applied rather than the document amended to 18.6%, because media share is
+a difficulty knob, not a cosmetic one. A smaller share means a weaker media signal against
+baseline, which makes recovery harder and failure more likely — the direction that flatters
+the interesting result. Running a version accidentally harder than specified and reporting
+the resulting failures is what K3 exists to prevent.
+
+B0 is solved numerically and C0's realised share asserted within ±0.05pp. Note a
+discrepancy to resolve: the analytic solve from 18.568% gives B0 = 684.0, but 680.8 was
+reported. Baseline is linear in B0, so the two should agree; if the gap survives
+re-derivation, something in the calibration is not linear in B0 and must be identified
+before proceeding.
+
+### D10 — 2026-08-05 — C7 placebo coupling reduced to 0.45
+
+**Corrected.** A coupling of 0.6 is unreachable on roughly 1.8% of seeds, so C7 would fail
+to construct nine times in a 500-seed run. The generator raises rather than clips, which is
+the correct behaviour and is what surfaced this; a clipping implementation would have
+produced a C7 silently claiming a coupling it did not have.
+
+0.45 rather than 0.5 because it is C6's middle level, which makes C7 decomposable against
+C6[0.45]: the interaction can be isolated only when each knob sits at a level also run
+alone.
+
+**Known limitation:** C7 remains only partially decomposable. Its ρ = 0.7 matches no C1
+level (0.5 / 0.8 / 0.95). Moving it to 0.8 was rejected because that would make C7 harder,
+again the unsafe direction. T = 104, φ = 0.6 and the misspecified forms all match their
+single-knob levels.
+
+### D11 — 2026-08-05 — D5's per-pair tolerance replaced with a sampling-noise rule
+
+**Corrected.** The fixed ±0.10 per-pair bound is tighter than sampling noise at T = 104:
+the SE of a single correlation there is (1−ρ²)/√(T−3) = 0.0507, making ±0.10 a two-sigma
+bound that 2–5% of pairs must breach by chance. A matched control at the same ρ and T but
+none of C7's other knobs breaches at 1.70% against C7's 2.08%, confirming the cause is the
+short series rather than the composite.
+
+The per-pair bound is now **4 · (1−ρ_target²) / √(T−3)**. One formula, no magic numbers,
+scaling with both T and ρ: ±0.203 at T = 104 with ρ = 0.7, ±0.132 at T = 520 with ρ = 0.5.
+A four-sigma breach is about 6e-5 per pair, so the assertion still fires on a real defect.
+The mean bound of ±0.02 is unchanged and is hit exactly, since the solver targets it.
+
+A distributional restatement ("≥95% of pairs within ±0.10") was rejected as near-vacuous —
+it would merely restate the sampling distribution it was meant to check.
+
+### D12 — 2026-08-05 — Latent demand standardised to SD = 0.25
+
+**Specified.** §2 fixes φ_AR = 0.8 but never the scale of d_t, which leaves γ = 0.5 and
+φ = 0.6 dimensionless. d_t is standardised in-sample to SD = 0.25, so a one-SD demand shock
+multiplies baseline by 1.13.
+
+Two measured reasons. At SD = 1.0 the baseline swings 0.37× to 2.72× at ±2 SD, which is not
+a real client's data, and a devastating C3 built that way would be the rigged failure that
+K3 and CLAUDE.md rule 5 forbid. At SD = 1.0, C7 is not constructible at all: φ = 0.6 alone
+induces a cross-channel correlation floor of 0.738, above C7's own ρ = 0.7 target. Floors
+are 0.178 / 0.456 / 0.636 / 0.738 at SD = 0.25 / 0.5 / 0.75 / 1.0.
+
+This makes C3's confounding weaker than a larger-SD version would, i.e. it makes MMM more
+likely to pass — the safe direction.
+
+### D13 — 2026-08-05 — C3's media-share drift is downward; D4's expectation was wrong
+
+**Recorded, not corrected.** D4 anticipated media share drifting upward under C3 where
+spend rises with demand. It drifts down: −0.14pp at φ = 0.3 and −0.10pp at φ = 0.6. Mean
+spend does rise, by exp(φ²σ_d²/2) ≈ 1.1%, but multiplying spend by exp(φ·d_t) also raises its
+variance, and the response curves are concave over most of the observed range, so Jensen
+takes back more than the mean adds.
+
+This concerns the DGP's realised media share only. It does **not** revise §8's C3
+prediction, which is about the estimator's bias under confounding — a different quantity,
+and still expected upward, since spend remains correlated with unobserved demand.
+
+### D14 — 2026-08-05 — C4's Weibull kernel is global; the confound is acknowledged
+
+**Limitation recorded.** §2 states a single Weibull specification, so under C4 and C7 every
+channel shares peak lag 2 and shape 2, and per-channel carryover heterogeneity disappears.
+C4 therefore tests wrong-shape *and* homogeneous-carryover jointly, not shape alone.
+
+Per-channel Weibull peaks matched to each channel's geometric mean lag were considered and
+rejected: search's mean lag of 0.11 weeks is unreachable for a kernel with zero weight at
+lag 0, so any mapping would introduce a further arbitrary choice. Instead, **if C4 fails G1
+or G4, a C4b diagnostic variant with per-channel peak lags is run** to attribute the failure
+between the two causes. If C4 passes, C4b is not run.
+
+### D15 — 2026-08-05 — Endogeneity applied literally, not recentred
+
+**Specified.** Spend is multiplied by exp(φ·d_t) with no recentring, raising mean spend by
+1.1% at φ = 0.6. A recentred variant was built and removed on parsimony: it is an extra
+assumption not in §2, for a 1.1% effect.
+
+Recorded for transparency: the recentred version also flips the sign of C3's media-share
+drift. The choice was made on parsimony rather than on that outcome, but the sensitivity is
+logged so the decision can be re-examined rather than discovered later.
