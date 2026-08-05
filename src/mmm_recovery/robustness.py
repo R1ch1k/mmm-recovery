@@ -45,10 +45,18 @@ from mmm_recovery.sweep import (
 )
 from mmm_recovery.truth import optimal_allocation, response_surface
 
-BOUNDS: Final = (1.3, 1.5, 2.0, 3.0)
-"""Upper bound on m_c. 3.0 is §3's pre-registered value; the rest are the objection."""
+BOUNDS: Final = ((0.0, 1.3), (0.0, 1.5), (0.0, 2.0), (0.0, 3.0), (0.7, 1.3))
+"""`(floor, cap)` on m_c. `(0.0, 3.0)` is §3's pre-registered pair.
 
-PREREGISTERED_BOUND: Final = 3.0
+The first four vary only the cap and leave the floor at zero, so a channel can still be switched
+off. `(0.7, 1.3)` is D35's two-sided planning guardrail: no channel may be cut by more than 30%
+or raised by more than 30%, which is the rule a governed team actually operates under and the one
+that forbids the "delete OOH" move carrying most of the true optimum's headroom (D20).
+"""
+
+PREREGISTERED_BOUND: Final = (0.0, 3.0)
+
+GUARDRAIL: Final = (0.7, 1.3)
 
 BOUND_CSV: Final = RESULTS_DIR / "optimiser_bound_check.csv"
 
@@ -57,6 +65,7 @@ BOUND_CSV: Final = RESULTS_DIR / "optimiser_bound_check.csv"
 class BoundOutcome:
     """One (bound, seed) cell. `None` fields are impossible; a failed solve is dropped."""
 
+    floor: float
     bound: float
     seed: int
     regret: float
@@ -83,10 +92,14 @@ def run_seed(seed: int) -> list[BoundOutcome]:
     fit = RidgeMMM().fit(sim.spend, sim.sales, seed)
 
     outcomes: list[BoundOutcome] = []
-    for bound in BOUNDS:
+    for floor, bound in BOUNDS:
         try:
-            optimum = optimal_allocation(surface, seed=OPTIMISER_SEED, max_multiplier=bound)
-            recommended = optimal_allocation(fit.surface, seed=OPTIMISER_SEED, max_multiplier=bound)
+            optimum = optimal_allocation(
+                surface, seed=OPTIMISER_SEED, max_multiplier=bound, min_multiplier=floor
+            )
+            recommended = optimal_allocation(
+                fit.surface, seed=OPTIMISER_SEED, max_multiplier=bound, min_multiplier=floor
+            )
         except ValueError as exc:
             if SLSQP_SIGNATURE not in str(exc):
                 raise
@@ -94,30 +107,33 @@ def run_seed(seed: int) -> list[BoundOutcome]:
         model_sales = surface.total_sales(recommended.multipliers)
         outcomes.append(
             BoundOutcome(
+                floor=floor,
                 bound=bound,
                 seed=seed,
                 regret=allocation_regret(surface, recommended.multipliers, optimum),
                 beats_status_quo=bool(model_sales > optimum.status_quo_sales),
                 achievable_lift_share=optimum.achievable_lift / optimum.status_quo_sales,
                 on_upper_bound=int(np.isclose(recommended.multipliers, bound).sum()),
-                on_lower_bound=int(np.isclose(recommended.multipliers, 0.0, atol=1e-8).sum()),
-                truth_on_lower_bound=int(np.isclose(optimum.multipliers, 0.0, atol=1e-8).sum()),
+                on_lower_bound=int(np.isclose(recommended.multipliers, floor, atol=1e-8).sum()),
+                truth_on_lower_bound=int(np.isclose(optimum.multipliers, floor, atol=1e-8).sum()),
             )
         )
     return outcomes
 
 
-def summarise(outcomes: list[BoundOutcome]) -> dict[float, dict[str, float]]:
-    """Per-bound decision gates, with a Wilson interval on the rate."""
-    summary: dict[float, dict[str, float]] = {}
-    for bound in BOUNDS:
-        cells = [outcome for outcome in outcomes if outcome.bound == bound]
+def summarise(outcomes: list[BoundOutcome]) -> dict[tuple[float, float], dict[str, float]]:
+    """Per-bound-pair decision gates, with a Wilson interval on the rate."""
+    summary: dict[tuple[float, float], dict[str, float]] = {}
+    for floor, bound in BOUNDS:
+        cells = [
+            outcome for outcome in outcomes if outcome.bound == bound and outcome.floor == floor
+        ]
         if not cells:
             continue
         regret = np.array([cell.regret for cell in cells])
         beats = sum(cell.beats_status_quo for cell in cells)
         low, high = wilson_interval(beats, len(cells))
-        summary[bound] = {
+        summary[floor, bound] = {
             "n": float(len(cells)),
             "median_regret": float(np.median(regret)),
             "beats_status_quo": beats / len(cells),
@@ -137,22 +153,28 @@ def summarise(outcomes: list[BoundOutcome]) -> dict[float, dict[str, float]]:
     return summary
 
 
-def format_table(summary: dict[float, dict[str, float]]) -> str:
+def format_table(summary: dict[tuple[float, float], dict[str, float]]) -> str:
     header = (
-        "| max m_c | G4 median regret | G5 beats status quo | 95% CI | achievable lift "
-        "| share regret > 1 | at upper bound | zeroed (model) | zeroed (truth) | n |"
+        "| m_c range | G4 median regret | G5 beats status quo | 95% CI | achievable lift "
+        "| share regret > 1 | at cap | at floor (model) | at floor (truth) | n |"
     )
     lines = [header, "|" + "---|" * 10]
-    for bound in sorted(summary):
-        row = summary[bound]
-        note = " (§3)" if bound == PREREGISTERED_BOUND else ""
+    for pair in sorted(summary):
+        row = summary[pair]
+        note = " (§3)" if pair == PREREGISTERED_BOUND else (" (D35)" if pair == GUARDRAIL else "")
         lines.append(
-            f"| {bound:.1f}{note} | {row['median_regret']:.3f} | {row['beats_status_quo']:.3f} "
+            f"| [{pair[0]:.1f}, {pair[1]:.1f}]{note} | {row['median_regret']:.3f} "
+            f"| {row['beats_status_quo']:.3f} "
             f"| [{row['beats_ci_low']:.3f}, {row['beats_ci_high']:.3f}] "
             f"| {100 * row['achievable_lift_share']:.3f}% | {row['share_regret_above_1']:.3f} "
             f"| {row['mean_channels_on_bound']:.3f} | {row['mean_channels_zeroed']:.2f} "
             f"| {row['mean_truth_channels_zeroed']:.2f} | {row['n']:.0f} |"
         )
+    lines.append("")
+    lines.append(
+        "G4 is NOT comparable across rows: a tighter range shrinks the achievable lift that "
+        "forms regret's denominator. G5 is a rate and is comparable. (D35)"
+    )
     return "\n".join(lines)
 
 
@@ -162,6 +184,7 @@ def write_csv(outcomes: list[BoundOutcome], path: Path) -> None:
         writer = csv.writer(handle, lineterminator="\n")
         writer.writerow(
             [
+                "min_multiplier",
                 "max_multiplier",
                 "seed",
                 "regret",
@@ -172,9 +195,10 @@ def write_csv(outcomes: list[BoundOutcome], path: Path) -> None:
                 "channels_zeroed_truth",
             ]
         )
-        for outcome in sorted(outcomes, key=lambda o: (o.bound, o.seed)):
+        for outcome in sorted(outcomes, key=lambda o: (o.floor, o.bound, o.seed)):
             writer.writerow(
                 [
+                    f"{outcome.floor:.1f}",
                     f"{outcome.bound:.1f}",
                     outcome.seed,
                     f"{outcome.regret:.10g}",

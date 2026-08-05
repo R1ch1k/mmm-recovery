@@ -88,6 +88,28 @@ GATE_THRESHOLDS: Final = {
     "G5_beats_status_quo": (">=", 0.90),
 }
 
+GATE_TOLERANCE: Final = 1e-9
+"""Slack on the gate comparison, to one part in a billion. Not a loosened threshold.
+
+Spearman's ρ on five channels takes values `1 - Σd²/20`, and scipy computes that as
+`1 - 6·4/120`, which in IEEE-754 is 0.7999999999999999889 — **one unit in the last place below**
+the double nearest to the literal `0.80`. A bare `>=` therefore reports a median ρ of exactly 0.8
+as failing a `>= 0.80` gate. That is a representation artefact, not a result, and reporting it as
+a failure would be the kind of error this study exists to avoid.
+
+The slack is nine orders of magnitude smaller than any threshold's meaningful precision, so it
+cannot turn a real failure into a pass. A gate that is genuinely within 1e-9 of its threshold is
+at the threshold and is reported as such.
+"""
+
+
+def passes(value: float, comparator: str, threshold: float) -> bool:
+    """Whether a gate value clears its §7 threshold, tolerant to one part in a billion."""
+    if comparator == "<":
+        return value < threshold + GATE_TOLERANCE
+    return value >= threshold - GATE_TOLERANCE
+
+
 RESULTS_DIR: Final = Path(__file__).resolve().parents[2] / "results"
 SWEEP_CSV: Final = RESULTS_DIR / "spend_variation_sweep.csv"
 
@@ -172,7 +194,18 @@ def run_cell(level: float, seed: int) -> CellResult:
     from `seed`, and both SLSQP solves take the fixed `OPTIMISER_SEED`, so the result does not
     depend on worker count or completion order.
     """
-    sim = simulate(sweep_params(level), seed)
+    return run_cell_with(sweep_params(level), seed, level)
+
+
+def run_cell_with(params: DGPParams, seed: int, level: float) -> CellResult:
+    """The same cell, for arbitrary `DGPParams`.
+
+    Split out so `flighting.py` scores D34's validity check through *this* code rather than a
+    copy of it. A second implementation of the gates would make any difference between the two
+    arms unattributable — the point of the check is that only the spend process changed.
+    `level` is carried through as the cell's label and has no effect on the computation.
+    """
+    sim = simulate(params, seed)
     surface = response_surface(sim)
     truth_contribution = incremental_contribution(surface)
     try:
@@ -419,8 +452,8 @@ def format_table(by_level: dict[float, list[CellResult]]) -> str:
         cells = []
         for level in levels:
             value = gates(by_level[level])[name]
-            passed = value < threshold if comparator == "<" else value >= threshold
-            cells.append(f"{value:.3f} {'pass' if passed else 'fail'}")
+            verdict = "pass" if passes(value, comparator, threshold) else "fail"
+            cells.append(f"{value:.3f} {verdict}")
         lines.append(f"| {name} | " + " | ".join(cells) + f" | {comparator} {threshold:.2f} |")
     lines.append("| G6_placebo | " + " | ".join(["n/a"] * len(levels)) + " | C5/C6/C7 only |")
 

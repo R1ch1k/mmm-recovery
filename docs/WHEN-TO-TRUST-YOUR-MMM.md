@@ -11,13 +11,19 @@ we gave a Marketing Mix Model everything it could reasonably ask for — ten yea
 data, no hidden factors, no channels moving in lockstep, and the exactly right shape of response
 curve built in — and asked it to recommend a budget.
 
-**Its recommendation was worse than leaving the budget alone in 4 runs out of 5.**
+**Its recommendation was worse than leaving the budget alone in 4 runs out of 5** — if you let it
+move budget freely. Under a sensible planning rule that caps any change at ±30% and never lets a
+model switch a channel off, that falls to **1 run in 4**.
 
 Not "less good than it could have been." Worse than doing nothing. We ran it two hundred times
-with different random draws of the same clean world, and in 160 of them the model's advice cost
-money relative to changing nothing at all. In the typical run it gave up about **2.7% of total
-sales** against the best allocation available, and destroyed about **1.6% of total sales**
-compared with sitting still.
+with different random draws of the same clean world, and in 160 of them (48 with the guardrail)
+the model's advice cost money relative to changing nothing at all. In the typical unconstrained
+run it gave up about **2.7% of total sales** against the best allocation available, and lost about
+**1.6% of total sales** compared with sitting still.
+
+Both versions fail the standard we wrote down before running anything: we required the advice to
+beat doing nothing 9 times in 10. It managed 2 in 10 unconstrained, and 7.6 in 10 with the
+guardrail.
 
 Then we ran Google's own Meridian on the same data, on its default settings. It got the channel
 contributions wrong by about the same margin.
@@ -76,10 +82,34 @@ spans a factor of about sixteen between its quiet weeks and its heavy ones, and 
 weeks sit below half that channel's own average — the model's advice was **still worse than doing
 nothing in 54% of runs**. Only the *ranking* of channels became reliable.
 
-One honest caveat: we varied *how much* spend moved, never *how* it moved. Our simulated spend
-never goes fully dark, so a flighted plan — weeks on, weeks off — is not something we tested. If
-you already flight your TV, your model may be in better shape than this page suggests, and that
-is worth knowing rather than assuming in either direction.
+## Does flighting help? Yes — for the estimate, not for the decision
+
+We then tested the thing a media planner would ask about immediately. Instead of spend merely
+jittering, we made TV, video and out-of-home run the way they are actually bought: bursts of two
+to six weeks live, dark weeks between, same annual budget concentrated into fewer weeks. Search
+and social stayed always-on.
+
+**It helped a lot — and only with the half that doesn't pay the bills.**
+
+- The typical channel's contribution error nearly halved.
+- Five and a half times as many runs got the contributions right.
+- Channel *ranking* became reliable for the first time in the whole study.
+- And the budget recommendation was **exactly as bad as before**: it beat doing nothing 20.7% of
+  the time, against 20.0% without flighting.
+
+So if your brand channels go dark between bursts, your model's numbers really are better than
+they would be otherwise. That is a genuine finding and worth having. It just does not mean the
+budget advice can be trusted, and that gap is the single most important thing on this page.
+
+## What actually limits the damage: guardrails
+
+The one intervention that made a large difference to the *decision* was refusing to act on
+extreme recommendations. When we forbade the optimiser from moving any channel by more than 30%
+in either direction — no switching a channel off, no tripling it — the share of runs where the
+advice was worse than doing nothing fell from **80% to 24%**.
+
+That is not the model getting better. It is the same wrong model, prevented from doing as much
+harm. Worth doing, and not a substitute for knowing the answer.
 
 The conclusion is uncomfortable but clean: **you cannot observe your way out of this. You have to
 experiment.** Deliberately turning spend up and down — a holdout, a geo test, a bump-up test —
@@ -102,8 +132,11 @@ for a period or two, not more history.
 
 **What to do with the output:**
 
-- **Use it for ranking, cautiously.** Channel order was the first thing to become reliable in our
-  tests. Rough ordering is a more defensible use than a number.
+- **Put a guardrail on it.** Cap any single reallocation at ±30% and never let a model switch a
+  channel off. This was the single most effective thing we tested: it cut worse-than-doing-nothing
+  outcomes from 80% of runs to 24%.
+- **Use it for ranking, cautiously.** Channel order was the first thing to become reliable, and
+  the only gate that ever passed. Rough ordering is a far more defensible use than a number.
 - **Do not use it for large reallocations.** That is precisely the use that failed.
 - **Treat "incremental" claims as attribution unless an experiment says otherwise.** That is the
   point of the whole exercise: attributable is not the same as incremental.

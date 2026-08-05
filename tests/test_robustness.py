@@ -14,6 +14,7 @@ import pytest
 
 from mmm_recovery.robustness import (
     BOUNDS,
+    GUARDRAIL,
     PREREGISTERED_BOUND,
     BoundOutcome,
     format_table,
@@ -31,8 +32,10 @@ def make(
     on_bound: int = 0,
     zeroed: int = 0,
     truth_zeroed: int = 1,
+    floor: float = 0.0,
 ) -> BoundOutcome:
     return BoundOutcome(
+        floor=floor,
         bound=bound,
         seed=seed,
         regret=regret,
@@ -52,22 +55,29 @@ class TestSummarise:
             make(3.0, 0, 5.0, True),
         ]
         summary = summarise(outcomes)
-        assert summary[1.3]["n"] == 2
-        assert summary[3.0]["n"] == 1
-        assert summary[1.3]["median_regret"] == pytest.approx(2.0)
+        assert summary[0.0, 1.3]["n"] == 2
+        assert summary[0.0, 3.0]["n"] == 1
+        assert summary[0.0, 1.3]["median_regret"] == pytest.approx(2.0)
 
     def test_share_regret_above_one_is_the_worse_than_nothing_rate(self) -> None:
         outcomes = [make(3.0, i, r, False) for i, r in enumerate([0.5, 1.5, 2.5, 3.5])]
-        assert summarise(outcomes)[3.0]["share_regret_above_1"] == pytest.approx(0.75)
+        assert summarise(outcomes)[0.0, 3.0]["share_regret_above_1"] == pytest.approx(0.75)
 
     def test_rate_carries_an_interval(self) -> None:
         outcomes = [make(3.0, i, 1.0, i == 0) for i in range(4)]
-        row = summarise(outcomes)[3.0]
+        row = summarise(outcomes)[0.0, 3.0]
         assert row["beats_ci_low"] < row["beats_status_quo"] < row["beats_ci_high"]
 
     def test_bounds_with_no_cells_are_omitted_rather_than_zero_filled(self) -> None:
         """An absent bound must not read as a bound where nothing beat the status quo."""
-        assert set(summarise([make(3.0, 0, 1.0, True)])) == {3.0}
+        assert set(summarise([make(3.0, 0, 1.0, True)])) == {(0.0, 3.0)}
+
+    def test_the_guardrail_is_keyed_separately_from_the_same_cap(self) -> None:
+        """[0.7, 1.3] and [0, 1.3] share a cap and must not be pooled."""
+        outcomes = [make(1.3, 0, 1.0, False), make(1.3, 0, 4.0, True, floor=0.7)]
+        summary = summarise(outcomes)
+        assert set(summary) == {(0.0, 1.3), (0.7, 1.3)}
+        assert summary[0.7, 1.3]["median_regret"] == pytest.approx(4.0)
 
 
 class TestBothSolvesShareTheBound:
@@ -80,12 +90,21 @@ class TestBothSolvesShareTheBound:
         A bound may be absent: per D30 a cell whose SLSQP solve fails is dropped, and seed 11
         loses 1.5 that way. The assertion is therefore a subset, not equality.
         """
-        outcomes = {outcome.bound: outcome for outcome in run_seed(11)}
+        outcomes = {(outcome.floor, outcome.bound): outcome for outcome in run_seed(11)}
         assert set(outcomes) <= set(BOUNDS)
-        assert {1.3, PREREGISTERED_BOUND} <= set(outcomes)
+        assert {(0.0, 1.3), PREREGISTERED_BOUND} <= set(outcomes)
         assert (
-            outcomes[1.3].achievable_lift_share
+            outcomes[0.0, 1.3].achievable_lift_share
             != outcomes[PREREGISTERED_BOUND].achievable_lift_share
+        )
+
+    def test_the_guardrail_shrinks_the_achievable_lift(self) -> None:
+        """D35: forbidding a channel from being switched off removes most of C0's headroom."""
+        outcomes = {(outcome.floor, outcome.bound): outcome for outcome in run_seed(11)}
+        assert GUARDRAIL in outcomes
+        assert (
+            outcomes[GUARDRAIL].achievable_lift_share
+            < outcomes[PREREGISTERED_BOUND].achievable_lift_share
         )
 
     def test_no_channel_exceeds_the_bound(self) -> None:
@@ -103,7 +122,7 @@ class TestBothSolvesShareTheBound:
 
     def test_zeroed_counts_are_reported_for_both_model_and_truth(self) -> None:
         """Like-for-like: the truth zeroes OOH too, so the model is not penalised for zeroing."""
-        row = summarise([make(3.0, 0, 2.0, False, zeroed=2, truth_zeroed=1)])[3.0]
+        row = summarise([make(3.0, 0, 2.0, False, zeroed=2, truth_zeroed=1)])[0.0, 3.0]
         assert row["mean_channels_zeroed"] == pytest.approx(2.0)
         assert row["mean_truth_channels_zeroed"] == pytest.approx(1.0)
         assert row["share_any_channel_zeroed"] == pytest.approx(1.0)
@@ -115,11 +134,20 @@ class TestCsv:
         outcomes = [make(3.0, 1, 2.0, False), make(1.3, 0, 1.0, True)]
         write_csv(outcomes, path)
         lines = path.read_text(encoding="utf-8").strip().split("\n")
-        assert lines[0].startswith("max_multiplier,seed,regret")
+        assert lines[0].startswith("min_multiplier,max_multiplier,seed,regret")
         assert len(lines) == 3
-        # sorted by (bound, seed) so the bytes do not depend on completion order
-        assert lines[1].startswith("1.3,0")
+        # sorted by (floor, bound, seed) so the bytes do not depend on completion order
+        assert lines[1].startswith("0.0,1.3,0")
 
-    def test_table_marks_the_preregistered_bound(self) -> None:
-        table = format_table(summarise([make(PREREGISTERED_BOUND, 0, 2.0, False)]))
+    def test_table_marks_the_preregistered_bound_and_the_guardrail(self) -> None:
+        table = format_table(
+            summarise(
+                [
+                    make(PREREGISTERED_BOUND[1], 0, 2.0, False, floor=PREREGISTERED_BOUND[0]),
+                    make(GUARDRAIL[1], 0, 0.5, True, floor=GUARDRAIL[0]),
+                ]
+            )
+        )
         assert "§3" in table
+        assert "D35" in table
+        assert "NOT comparable" in table

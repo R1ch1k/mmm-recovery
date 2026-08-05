@@ -7,7 +7,15 @@ Ten years of weekly data. No confounding. No collinearity. The estimator given t
 correct functional form and a control block that reproduces the true baseline to a residual of
 1.4 × 10⁻¹³ £k per week. Under those conditions the fitted model's recommended budget allocation
 is **worse than leaving the budget alone in 160 of 200 simulated worlds** (80.0%, 95% CI
-73.9–85.0%).
+73.9–85.0%) when the optimiser has the action space this study pre-registered — and in **48 of
+200** (24.0%) under a two-sided ±30% planning guardrail that forbids switching a channel off.
+
+Both figures fail the gate that was fixed before any code ran. The recommendation beats the
+status quo 20.0% of the time unconstrained and 76.0% guardrailed, against a pre-registered
+threshold of 90%; the guardrailed interval, [69.6%, 81.4%], excludes it. **A governed MMM is far
+less destructive and still not good enough.** Every figure below names its action space, because
+the difference between them is large and quoting the unconstrained one alone would overstate the
+case.
 
 Every way in which this dataset is unrealistic makes the problem **easier** than a real one:
 five channels rather than the fifteen to twenty a live model carries once price, promotion,
@@ -120,6 +128,58 @@ Three findings rule out the comfortable explanations:
   it zeroes exactly **1.00**, always OOH, the one channel whose true ROAS is below break-even at
   0.82. Defunding a channel is therefore not the error; defunding more channels than the truth
   does is. See D33.
+
+## Two validity checks that could have overturned this, with their readings fixed in advance
+
+Both were run *because* they might sink the headline, and both had their interpretations written
+into the deviations log and committed to git before the numbers existed (D34, D35). One went this
+study's way. One did not, and is reported as it landed.
+
+**Does the failure survive a realistic media plan?** The sweep above varies how much spend jitters
+and never how it is *shaped* — the simulated spend never goes dark. A flighted plan is
+categorically different: it traces the response curve near zero and makes adstock observable,
+because sales in a dark week are carryover and nothing else. So the question was whether C0's
+spend process was unrepresentatively hard. TV, video and OOH were flighted in independent 2–6 week
+bursts at a 50% duty cycle, with each channel's total budget preserved; search and social stayed
+always-on. 200 seeds, baseline arm reproducing D23 exactly.
+
+| Gate | C0 baseline | C0 flighted | Threshold |
+|---|---|---|---|
+| G1 median absolute relative error | 0.540 | **0.309** | < 0.20, still fails |
+| G3 median Spearman | 0.650 | **0.800** | ≥ 0.80, **passes** |
+| Seeds passing G1 individually | 4.5% | **25.3%** | — |
+| **G5 beats status quo** | **0.200** [0.150, 0.261] | **0.207** [0.156, 0.269] | ≥ 0.90, fails |
+| Share worse than doing nothing | 0.800 | 0.793 | — |
+
+**Flighting substantially fixes the estimation and does nothing whatsoever for the decision.**
+Contribution error nearly halves, five and a half times as many individual runs pass G1, and
+channel *ranking* becomes reliable for the first time. And the budget recommendation is exactly as
+bad as before: 0.207 against 0.200, intervals almost entirely overlapping. A team that flights its
+buys gets a better-estimated model and an equally poor recommendation. That is this project's
+thesis appearing a second time, from a direction it was not looking — **estimable ≠ actionable**.
+
+**Does the failure survive a governed action space?** §3 let the optimiser take any channel to
+zero or to 3× spend. Real teams operate under planning rules. Adding a two-sided ±30% guardrail —
+no channel cut or raised by more than 30% — on both the truth solve and the recommendation:
+
+| m_c range | G4 median regret | G5 beats status quo | 95% CI | Achievable lift | Worse than nothing |
+|---|---|---|---|---|---|
+| [0.0, 3.0] (§3) | 2.355× | 0.200 | [0.150, 0.261] | 1.160% | 0.800 |
+| [0.0, 1.3] | 1.407× | 0.303 | [0.243, 0.370] | 1.126% | 0.697 |
+| **[0.7, 1.3]** | 0.501× | **0.760** | **[0.696, 0.814]** | 0.623% | **0.240** |
+
+**This one did not go the study's way and the pre-commitment is honoured rather than
+reinterpreted.** D35 committed to "if the advice still loses to the status quo more often than
+not, the objection is closed." It does not — guardrailed, it *wins* 76% of the time. The objection
+is sustained in part. What survives is that G5 of 0.760 still fails the 0.90 threshold with an
+interval excluding it, and G4 still fails by two and a half times.
+
+The mechanism is the interesting part. The guardrail helps so much because it removes the decision
+carrying most of C0's headroom — the true optimum defunds OOH entirely, and forbidding that halves
+achievable lift from 1.160% to 0.623%. Under the guardrail the *truth* puts 1.97 channels on the
+floor and the model 1.52. **The model is not failing by making wild recommendations. It is failing
+by being wrong about which channels deserve the money, and a guardrail bounds the consequence of
+being wrong without reducing the error.**
 
 ## Google's Meridian agrees on the estimation failure and disagrees on the intervals
 
@@ -296,16 +356,16 @@ Read these as binding, not as ritual.
 - **Experiment-calibrated priors are untested.** This study's own recommendation — run an
   experiment — enters an MMM through a tightened ROI prior. Meridian supports exactly that and it
   was not tried, so the recommendation is argued rather than demonstrated.
-- **The benchmark optimum is not an implementable decision.** On C0 the true optimum zeroes OOH,
-  the one channel with a true ROAS below 1 (0.82, against 1.73–2.30 elsewhere). No marketing team
-  switches a channel off on model evidence alone, so regret here is measured against a benchmark
-  no governed team could actually reach. A realistic two-sided guardrail would lower both the
-  benchmark and the measured regret.
-- **The sweep varies the amplitude of spend jitter, never its shape.** The spend process is
-  lognormal and never goes dark, so flighting — the on/off pattern that is closest to the
-  deliberate high-low policy Dew et al. recommend, and that many advertisers already run — is
-  outside the family tested. Whether a flighted plan restores identification is untested here and
-  is the single most valuable next run.
+- **The pre-registered action space is not an implementable one, and this materially moves the
+  headline.** §3 lets the optimiser zero a channel, and the true optimum does exactly that to OOH
+  (true ROAS 0.82 against 1.73–2.30 elsewhere). Under a governed ±30% guardrail the
+  worse-than-nothing rate falls from 80% to 24%. The gates still fail, but any single number
+  quoted from this study must name which action space produced it.
+- **One DGP family, and now one spend *shape* beyond it.** Flighting was tested (above) and did
+  not rescue the decision. Other plan shapes — seasonal pulsing, always-on with occasional
+  blackouts, geo-staggered launches — were not.
+- **The flighted arm's achievable lift is half the baseline's** (0.54% against 1.16%), so its G4
+  is not comparable to C0's and is not compared. Only G1, G3 and G5 carry across the two arms.
 - **Robyn is untested.** The Python port is an LLM-translated beta, so a failure there would be
   uninterpretable and no claim is made about it.
 - **Global optimality is empirically supported, not proven** (D17). The surface is non-concave; the
@@ -333,9 +393,10 @@ No network calls, no API keys, no data downloads. Every stochastic step takes an
 
 ```bash
 uv sync
-uv run pytest                              # 399 tests: 398 pass, 1 strict xfail
+uv run pytest                              # 416 tests: 415 pass, 1 strict xfail
 uv run python -m mmm_recovery.sweep        # the exploratory sweep, ~1 min
-uv run python -m mmm_recovery.robustness   # the optimiser-bound check, ~1 min
+uv run python -m mmm_recovery.robustness   # bound check + the ±30% guardrail, ~2 min
+uv run python -m mmm_recovery.flighting    # the flighted-spend validity check, ~2 min
 ```
 
 The sweep refuses to write results unless its `spend_log_sd = 0.30` column reproduces D23's

@@ -1152,3 +1152,79 @@ under the guardrail — less headroom is reachable — so G4 is not comparable a
 will be reported without cross-comparison. G5 is a rate and is comparable. If the advice still
 loses to the status quo more often than not under a rule that forbids the destructive move, the
 objection is closed.
+
+### D36 — 2026-08-06 — D34's result. Flighting fixes estimation and does nothing for the decision.
+
+**Run as D34 specified. The baseline arm reproduces D23 exactly — 0.540 / 0.417 / 0.650 / 2.355 /
+0.200 — which is what licenses the comparison: only the spend process changed.** 200 seeds per
+arm. Raw output is `results/flighting_check.csv`.
+
+| Gate | C0 baseline | C0 flighted | Threshold | |
+|---|---|---|---|---|
+| G1 median absolute relative error | 0.540 | **0.309** | < 0.20 | still fails |
+| G2 coverage | 0.417 | 0.323 | ≥ 0.80 | fails, and worse |
+| G3 median Spearman | 0.650 | **0.800** | ≥ 0.80 | **passes** |
+| G4 median regret | 2.355 | 2.894 | < 0.20 | fails |
+| G5 beats status quo | 0.200 [0.150, 0.261] | **0.207 [0.156, 0.269]** | ≥ 0.90 | fails |
+| Seeds passing G1 individually | 4.5% | **25.3%** | — | 5.6× more |
+| Share of runs worse than doing nothing | 0.800 | 0.793 | — | unchanged |
+| Realised media share (D4) | 0.2500 | 0.2382 | — | drifts down 1.2 points |
+| Achievable lift | 1.16% | 0.54% | — | halves |
+| Duty cycle, flighted channels | 1.00 | 0.50 | — | as designed |
+
+**D34's pre-committed reading applies: G1 still fails, so C0's spend process was not the cause of
+the failure and the headline stands with one fewer attack surface.** The objection that a
+lognormal jitter is an unrepresentatively hard world has been tested rather than argued, and it
+does not overturn the result.
+
+**But the referee's intuition was half right and that half is reported without spin.** Flighting
+carries real identifying information: G1 nearly halves, the number of individual seeds passing it
+rises more than fivefold, and G3 crosses its threshold — channel *ranking* becomes reliable when
+spend goes dark. Anyone claiming this study shows spend variation is irrelevant would be
+misreading it.
+
+**The finding is what happens to the two halves separately, and it restates the study's thesis in
+a second, independent place.** Flighting substantially improves **estimation** and leaves the
+**decision** exactly where it was: G5 moves from 0.200 to 0.207 with intervals that almost
+entirely overlap, and the share of runs worse than doing nothing is 0.800 against 0.793. A team
+that flights its buys gets a better-estimated model and an equally bad budget recommendation.
+That is *attributable ≠ incremental* appearing again, now as *estimable ≠ actionable*.
+
+Two mechanical notes. G4 rises to 2.894, but the two arms' achievable lift differs (1.16% against
+0.54%), so regret's denominator is not the same quantity and the two G4 figures must not be
+compared — the same caveat D35 records. And two flighted cells failed SLSQP and are excluded per
+D30.
+
+### D37 — 2026-08-06 — D35's result. The guardrail helps a great deal, and the gates still fail.
+
+**Run as D35 specified, on the same fitted surfaces, 200 seeds.** Raw output is
+`results/optimiser_bound_check.csv`.
+
+| m_c range | G4 median regret | G5 beats status quo | 95% CI | Achievable lift | Share worse than nothing | n |
+|---|---|---|---|---|---|---|
+| [0.0, 3.0] (§3) | 2.355 | 0.200 | [0.150, 0.261] | 1.160% | 0.800 | 200 |
+| [0.0, 1.3] | 1.407 | 0.303 | [0.243, 0.370] | 1.126% | 0.697 | 198 |
+| **[0.7, 1.3] (D35)** | 0.501 | **0.760** | **[0.696, 0.814]** | 0.623% | **0.240** | 200 |
+
+**D35's pre-committed reading does not go this study's way, and it is recorded as stated rather
+than reinterpreted.** The commitment was: "if the advice still loses to the status quo more often
+than not under a rule that forbids the destructive move, the objection is closed." It does not.
+Under a two-sided ±30% guardrail the advice **beats** the status quo 76.0% of the time. **The
+objection is therefore sustained in part**, and the write-up says so.
+
+What survives, and it is the thing the gates were written to test: **G5 of 0.760 still fails the
+pre-registered threshold of 0.90, with a 95% interval of [0.696, 0.814] that excludes it**, and
+G4 of 0.501 still fails 0.20 by two and a half times. A guardrailed MMM is far less destructive
+and still not good enough by the standard fixed before any of this ran.
+
+**What this changes in the write-up.** The line "worse than leaving the budget alone in 160 of 200
+worlds" is true of §3's pre-registered action space and **not** of a governed one, where the
+figure is 48 of 200. Both are reported, the action space is named each time, and the unconstrained
+figure never appears alone.
+
+**Why the guardrail helps so much is itself the mechanism.** It removes the decision that carries
+most of C0's headroom: the truth's optimum defunds OOH entirely (D20), and forbidding that halves
+achievable lift from 1.160% to 0.623%. Under the guardrail the *truth* sits 1.97 channels on the
+floor and the model 1.52. The model is not failing because it makes wild recommendations — it is
+failing because it is wrong about which channels deserve the money, and a guardrail limits how
+much damage being wrong can do. It bounds the consequence, not the error.

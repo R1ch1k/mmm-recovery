@@ -23,6 +23,7 @@ Units: spend and sales are £k per week. Spend matrices are (T, C), series are (
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import Final
 
 import numpy as np
 from numpy.typing import NDArray
@@ -151,6 +152,18 @@ class DGPParams:
     placebo_coupling: float | None = None
     """D1 target: equal correlation of placebo spend with search spend and with season."""
 
+    flighted_channels: tuple[str, ...] = ()
+    """D34: channels bought in bursts with dark weeks between them.
+
+    Empty by default, and when empty **not a single random draw is consumed**, so C0 and every
+    number already reported are bit-identical to before this knob existed. The flighting stream
+    is spawned separately from `seed` for the same reason — it cannot shift the noise draw that
+    follows it in `simulate`.
+    """
+
+    flight_burst_weeks: tuple[int, int] = (2, 6)
+    """D34: inclusive range for the length of each live block and of each dark block."""
+
     misspecified: bool = False
     """C4 and C7: the truth uses Weibull adstock and logistic saturation instead."""
 
@@ -200,6 +213,15 @@ class DGPParams:
                 raise ValueError("placebo_coupling set but no channel named 'placebo'")
         if float(_seasonality(self.n_weeks, self.season_coefficients).min()) <= 0.0:
             raise ValueError("season_coefficients drive the seasonal multiplier non-positive")
+        unknown = set(self.flighted_channels) - set(names)
+        if unknown:
+            raise ValueError(f"flighted_channels names no such channel: {sorted(unknown)}")
+        shortest, longest = self.flight_burst_weeks
+        if not 1 <= shortest <= longest:
+            raise ValueError(
+                f"flight_burst_weeks must be (shortest, longest) with 1 <= shortest <= longest; "
+                f"got {self.flight_burst_weeks}"
+            )
 
 
 @dataclass(frozen=True)
@@ -359,6 +381,66 @@ def _assemble_spend(
     return np.asarray(spend, dtype=np.float64)
 
 
+_FLIGHT_STREAM: Final = 7919
+"""Spawn key for the flighting RNG. Distinct from the main stream so D34 cannot move C0."""
+
+
+def _flight_mask(
+    n_weeks: int, burst: tuple[int, int], rng: np.random.Generator
+) -> NDArray[np.bool_]:
+    """(T,) alternating live and dark blocks, each drawn from `burst`, with a random phase.
+
+    The first block is truncated by a random offset so that two channels sharing a burst length
+    do not both switch on in week 0. Without that, independently drawn schedules would still
+    align at the start of the series and hand the estimator a synchronised pattern — which is
+    C1's collinearity, smuggled in through a knob that is supposed to test something else.
+    """
+    shortest, longest = burst
+    mask = np.empty(n_weeks, dtype=np.bool_)
+    live = bool(rng.integers(2))
+    length = int(rng.integers(shortest, longest + 1))
+    length -= int(rng.integers(0, length))
+    filled = 0
+    while filled < n_weeks:
+        take = min(length, n_weeks - filled)
+        mask[filled : filled + take] = live
+        filled += take
+        live = not live
+        length = int(rng.integers(shortest, longest + 1))
+    return mask
+
+
+def _apply_flighting(
+    params: DGPParams, spend: NDArray[np.float64], seed: int
+) -> NDArray[np.float64]:
+    """D34: dark the off weeks and concentrate each channel's own budget into its live weeks.
+
+    Totals are preserved per channel. A planner who flights has the same budget and spends it in
+    bursts; letting the total fall would confound "flighted" with "spent half as much", and the
+    comparison against C0 would then be measuring the wrong thing.
+    """
+    rng = np.random.default_rng([seed, _FLIGHT_STREAM])
+    flighted = np.array(spend, dtype=np.float64, copy=True)
+    for index, channel in enumerate(params.channels):
+        if channel.name not in params.flighted_channels:
+            continue
+        mask = _flight_mask(params.n_weeks, params.flight_burst_weeks, rng)
+        column = np.where(mask, flighted[:, index], 0.0)
+        live_total = float(column.sum())
+        if not live_total > 0.0:
+            raise ValueError(f"flighting darkened every week of {channel.name!r}")
+        flighted[:, index] = column * (float(flighted[:, index].sum()) / live_total)
+    return flighted
+
+
+def duty_cycles(result: SimResult) -> dict[str, float]:
+    """Realised fraction of weeks each channel was live. 1.0 for anything not flighted."""
+    return {
+        name: float((result.spend[:, index] > 0.0).mean())
+        for index, name in enumerate(result.channel_names)
+    }
+
+
 def _mean_pairwise_correlation(spend: NDArray[np.float64], columns: list[int]) -> float:
     """Mean off-diagonal Pearson correlation of spend levels across the given columns."""
     matrix = np.corrcoef(spend[:, columns], rowvar=False)
@@ -515,6 +597,8 @@ def simulate(params: DGPParams, seed: int) -> SimResult:
         )
 
     spend = spend_at(mix_weight, placebo_weight)
+    if params.flighted_channels:
+        spend = _apply_flighting(params, spend, seed)
     response = evaluate(params, spend, demand, season)
     sigma = params.noise_fraction * float(response.noiseless_sales.mean())
     sales = response.noiseless_sales + rng.normal(0.0, sigma, params.n_weeks)

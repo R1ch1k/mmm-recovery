@@ -356,7 +356,7 @@ class OptimalAllocation:
 
 
 def _structured_starts(
-    surface: AllocatableSurface, max_multiplier: float
+    surface: AllocatableSurface, max_multiplier: float, min_multiplier: float = 0.0
 ) -> list[NDArray[np.float64]]:
     """Status quo, equal budget share, and each channel pushed to its upper bound.
 
@@ -371,20 +371,28 @@ def _structured_starts(
     """
     n_channels = surface.n_channels
     totals, budget = surface.spend_totals, surface.budget
-    starts = [surface.status_quo(), np.clip((budget / n_channels) / totals, 0.0, max_multiplier)]
+    starts = [
+        surface.status_quo(),
+        np.clip((budget / n_channels) / totals, min_multiplier, max_multiplier),
+    ]
     for channel in range(n_channels):
-        candidate = np.zeros(n_channels, dtype=np.float64)
+        candidate = np.full(n_channels, min_multiplier, dtype=np.float64)
         candidate[channel] = max_multiplier
         committed = max_multiplier * float(totals[channel])
         others = [index for index in range(n_channels) if index != channel]
         if others and committed < budget:
             candidate[others] = (budget - committed) / float(totals[others].sum())
-        starts.append(np.clip(candidate, 0.0, max_multiplier))
+        starts.append(np.clip(candidate, min_multiplier, max_multiplier))
     return starts
 
 
 def _screened_random_starts(
-    surface: AllocatableSurface, n_wanted: int, pool: int, max_multiplier: float, seed: int
+    surface: AllocatableSurface,
+    n_wanted: int,
+    pool: int,
+    max_multiplier: float,
+    seed: int,
+    min_multiplier: float = 0.0,
 ) -> list[NDArray[np.float64]]:
     """Draw `pool` budget-feasible points and keep the `n_wanted` scoring highest.
 
@@ -396,24 +404,30 @@ def _screened_random_starts(
     rng = np.random.default_rng(seed)
     weights = rng.dirichlet(np.ones(surface.n_channels), size=pool)
     candidates = [
-        np.clip(row * surface.budget / surface.spend_totals, 0.0, max_multiplier) for row in weights
+        np.clip(row * surface.budget / surface.spend_totals, min_multiplier, max_multiplier)
+        for row in weights
     ]
     candidates.sort(key=surface.media_total, reverse=True)
     return candidates[:n_wanted]
 
 
 def _starting_points(
-    surface: AllocatableSurface, n_starts: int, max_multiplier: float, seed: int, pool: int
+    surface: AllocatableSurface,
+    n_starts: int,
+    max_multiplier: float,
+    seed: int,
+    pool: int,
+    min_multiplier: float = 0.0,
 ) -> list[NDArray[np.float64]]:
     """All structured starts, topped up with screened random ones to reach `n_starts`."""
-    structured = _structured_starts(surface, max_multiplier)
+    structured = _structured_starts(surface, max_multiplier, min_multiplier)
     if n_starts < len(structured):
         raise ValueError(
             f"n_starts must be at least {len(structured)} so every channel's basin is seeded; "
             f"got {n_starts}"
         )
     return structured + _screened_random_starts(
-        surface, n_starts - len(structured), pool, max_multiplier, seed
+        surface, n_starts - len(structured), pool, max_multiplier, seed, min_multiplier
     )
 
 
@@ -424,6 +438,7 @@ def optimal_allocation(
     max_multiplier: float = MAX_MULTIPLIER,
     tolerance: float = AGREEMENT_TOLERANCE,
     screening_pool: int = 200,
+    min_multiplier: float = 0.0,
 ) -> OptimalAllocation:
     """Maximise noiseless sales subject to the budget, from multiple starts, with SLSQP.
 
@@ -467,9 +482,13 @@ def optimal_allocation(
             the optimum fails to beat the status quo.
     """
 
+    if not 0.0 <= min_multiplier < max_multiplier:
+        raise ValueError(
+            f"need 0 <= min_multiplier < max_multiplier; got [{min_multiplier}, {max_multiplier}]"
+        )
     totals = surface.spend_totals
     budget = surface.budget
-    bounds = [(0.0, max_multiplier)] * surface.n_channels
+    bounds = [(min_multiplier, max_multiplier)] * surface.n_channels
 
     # Both the objective and the constraint are scaled to O(1). Without this SLSQP fails from
     # every start with "positive directional derivative for linesearch": media contribution is
@@ -493,7 +512,9 @@ def optimal_allocation(
         return -surface.media_gradient(multipliers) / objective_scale
 
     solutions: list[tuple[float, NDArray[np.float64]]] = []
-    starts = _starting_points(surface, n_starts, max_multiplier, seed, screening_pool)
+    starts = _starting_points(
+        surface, n_starts, max_multiplier, seed, screening_pool, min_multiplier
+    )
     for index, start in enumerate(starts):
         outcome = minimize(
             objective,
@@ -517,9 +538,11 @@ def optimal_allocation(
                 f"SLSQP reported success from start {index} but the budget constraint is "
                 f"violated by {residual:.6g} £k ({residual / budget:.3e} relative)"
             )
-        if np.any(solution < -1e-9) or np.any(solution > max_multiplier + 1e-9):
-            raise ValueError(f"SLSQP returned a solution outside [0, {max_multiplier}]")
-        bounded = np.clip(solution, 0.0, max_multiplier)
+        if np.any(solution < min_multiplier - 1e-9) or np.any(solution > max_multiplier + 1e-9):
+            raise ValueError(
+                f"SLSQP returned a solution outside [{min_multiplier}, {max_multiplier}]"
+            )
+        bounded = np.clip(solution, min_multiplier, max_multiplier)
         solutions.append((surface.media_total(bounded), bounded))
 
     best_media, best_multipliers = max(solutions, key=lambda pair: pair[0])
