@@ -29,6 +29,7 @@ dev = [
     # Real stubs, so scipy calls are actually type-checked rather than waved through
     # with ignore_missing_imports.
     "scipy-stubs>=1.14",
+    "pandas-stubs>=3.0.5.260730",
 ]
 
 [build-system]
@@ -63,6 +64,13 @@ python_version = "3.12"
 strict = true
 warn_unreachable = true
 files = ["src", "tests"]
+
+# google-meridian ships no py.typed marker, so strict mode cannot see through it. Scoped to
+# the one optional dependency rather than relaxed globally: everything the study's own
+# conclusions run through stays fully checked.
+[[tool.mypy.overrides]]
+module = ["meridian.*"]
+ignore_missing_imports = true
 
 [tool.coverage.run]
 source = ["src/mmm_recovery"]
