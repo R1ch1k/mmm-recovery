@@ -1,0 +1,5 @@
+# Determinism (CLAUDE.md rule 4): `make reproduce` must produce byte-identical
+# output on a clean checkout. Line endings are normalised to LF in the index AND
+# in the working tree, so a CRLF-defaulting Windows checkout cannot change the
+# bytes of a committed result file.
+* text=auto eol=lf
