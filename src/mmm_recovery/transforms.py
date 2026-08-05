@@ -167,32 +167,43 @@ def hill_saturation(
 def logistic_saturation(
     adstocked: NDArray[np.float64], half_saturation: float, scale: float
 ) -> NDArray[np.float64]:
-    """Logistic saturation — the *misspecified* diminishing-returns truth for C4 and C7.
+    """Logistic saturation, zero-anchored — the *misspecified* truth for C4 and C7.
 
-    ``g(x) = 1 / (1 + exp(-(x - κ)/s))``, exactly as written in PREREGISTRATION.md §2.
+    Deviation **D3**. The raw logistic ``g(x) = 1/(1 + exp(-(x - κ)/s))`` is strictly
+    positive at zero spend, so as literally specified in PREREGISTRATION.md §2 every
+    channel would emit sales while spending nothing — about £3.96k/week for TV at the D2
+    scale of s = κ/4. What is implemented is therefore the zero-anchored form::
 
-    **This does not map 0 to 0.** ``g(0) = 1/(1 + exp(κ/s))``, which is strictly positive,
-    so a channel transformed this way produces a non-zero response at zero spend. Two
-    consequences the caller must handle rather than ignore:
+        sat(x) = (g(x) - g(0)) / (1 - g(0))
 
-    * the constant ``β_c·g(0)`` is absorbed into the level of sales, so it inflates the
-      apparent baseline rather than the media contribution;
-    * true incremental contribution stays well defined because PREREGISTRATION.md §3
-      computes it as a *difference* under ``do(spend_c := 0)``, which cancels the offset.
+    which maps 0 to 0 exactly, still spans [0, 1], and keeps the S-shape. D3's reasoning:
+    C4 is meant to test misspecification of curve *shape*, and an additive offset would
+    have made it test two things at once.
 
-    The prereg does not give a value for ``s``, so it is a required argument here with no
-    default — the DGP must state it. Both points are flagged for the Deviations Log.
+    The anchoring is exact, not approximate. ``g(0)`` is subtracted using the identical
+    expression that produces ``g(x)`` at x = 0, so the two cancel bit for bit and a zeroed
+    channel contributes exactly nothing. `dgp.py` depends on that: with all spend zeroed,
+    noiseless sales must equal the baseline exactly.
+
+    Note that κ is no longer the half-response point — it is the inflection point of the
+    underlying logistic. The anchored curve reaches ``(0.5 - g(0))/(1 - g(0))`` there,
+    which is 0.482 at s = κ/4.
 
     Args:
         adstocked: (T,) adstocked spend, £k per week, finite and non-negative.
-        half_saturation: κ in £k per week — the inflection point, where g = 0.5.
-        scale: s in £k per week, the width of the transition. Must be positive; smaller
-            values make the curve approach a step function at κ.
+        half_saturation: κ in £k per week — the inflection point of the underlying curve.
+        scale: s in £k per week, the width of the transition. Must be positive; D2 fixes
+            it at κ/4. Smaller values push the curve toward a step function at κ, and past
+            roughly κ + 37·s the float64 result is exactly 1.0 with an exactly zero
+            gradient — which is why D2 requires `truth.py` to assert the optimiser's
+            spend range stays clear of it.
 
     Returns:
-        (T,) dimensionless response fraction in (0, 1).
+        (T,) dimensionless response fraction in [0, 1], exactly 0 at zero spend.
     """
     series = _validated_series(adstocked, "adstocked")
     if scale <= 0.0:
         raise ValueError(f"scale (s) must be positive; got {scale}")
-    return np.asarray(expit((series - half_saturation) / scale), dtype=np.float64)
+    response = expit((series - half_saturation) / scale)
+    at_zero = expit((0.0 - half_saturation) / scale)
+    return np.asarray((response - at_zero) / (1.0 - at_zero), dtype=np.float64)

@@ -203,33 +203,48 @@ def test_hill_reaches_one_half_at_the_half_saturation_point() -> None:
         assert float(value[0]) == pytest.approx(0.5, abs=1e-12)
 
 
-def test_logistic_does_not_map_zero_to_zero() -> None:
-    """Documents a conflict between PREREGISTRATION.md §2 and the CLAUDE.md Step 1 test list.
+@pytest.mark.parametrize(
+    ("half_saturation", "scale"),
+    [(kappa, kappa / 4.0) for _, _, _, kappa in CHANNEL_TRUTHS],
+)
+def test_logistic_maps_zero_to_zero_exactly(half_saturation: float, scale: float) -> None:
+    """Deviation D3, at the D2 scale of s = κ/4. Exactly zero, not approximately.
 
-    The prereg defines logistic saturation as ``1/(1 + exp(-(x-κ)/s))``, which is strictly
-    positive at x=0, while CLAUDE.md asks every saturation to map 0 to 0. The prereg is the
-    binding document, so the literal form is what is implemented, and this test pins the
-    non-zero intercept in place so that any future shift to a zero-anchored variant has to
-    be a deliberate, logged change rather than a silent one.
+    `dgp.py` leans on this: with every channel's spend zeroed, noiseless sales must equal
+    the baseline bit for bit, which only holds if the anchoring cancels exactly rather than
+    to within a tolerance. Asserting `== 0.0` rather than `approx(0.0)` is the point of the
+    test, so a future refactor that computes g(0) by a different route than g(x) fails here
+    instead of leaking a residue into the DGP.
     """
-    half_saturation, scale = 25.0, 8.0
-    value = float(logistic_saturation(np.array([0.0]), half_saturation, scale)[0])
-    assert value == pytest.approx(1.0 / (1.0 + np.exp(half_saturation / scale)), rel=1e-12)
-    assert value > 0.0
+    assert logistic_saturation(np.array([0.0]), half_saturation, scale)[0] == 0.0
 
 
 @pytest.mark.parametrize("scale", [1.0, 5.0, 8.0, 20.0])
-def test_logistic_is_monotone_and_hits_one_half_at_kappa(scale: float) -> None:
+def test_logistic_is_monotone_and_kappa_is_the_inflection(scale: float) -> None:
+    """After D3, κ is the inflection point, not the half-response point.
+
+    Zero-anchoring rescales the curve, so it passes through (0.5 - g(0))/(1 - g(0)) at κ
+    rather than 0.5. The inflection stays at κ because the anchoring is affine.
+    """
     grid = np.linspace(0.0, 400.0, 801)
     response = logistic_saturation(grid, half_saturation=25.0, scale=scale)
-    assert np.all(response > 0.0)
+    assert response[0] == 0.0
+    assert np.all(response >= 0.0)
     assert np.all(np.diff(response) >= 0.0)
     # Strictly increasing while the curve is still meaningfully below its asymptote. Closer
     # in than that, neighbouring grid points collapse onto the same float64 — the spacing
     # just below 1.0 is 2.2e-16 — so ties there are a representation limit, not a property
     # of the function. See test_logistic_gradient_dies_once_float64_saturates.
     assert np.all(np.diff(response[response < 1.0 - 1e-9]) > 0.0)
-    assert float(logistic_saturation(np.array([25.0]), 25.0, scale)[0]) == pytest.approx(0.5)
+
+    at_zero = 1.0 / (1.0 + np.exp(25.0 / scale))
+    at_kappa = float(logistic_saturation(np.array([25.0]), 25.0, scale)[0])
+    assert at_kappa == pytest.approx((0.5 - at_zero) / (1.0 - at_zero), rel=1e-12)
+
+    # Inflection at κ: the slope is maximised there.
+    fine = np.linspace(0.0, 200.0, 20001)
+    slope = np.diff(logistic_saturation(fine, 25.0, scale))
+    assert float(fine[int(np.argmax(slope))]) == pytest.approx(25.0, abs=0.02)
 
 
 @pytest.mark.parametrize("scale", [0.5, 1.0, 8.0])
@@ -239,10 +254,12 @@ def test_logistic_gradient_dies_once_float64_saturates(scale: float) -> None:
     In float64, ``expit(z)`` returns exactly 1.0 once z exceeds about 36.7, so logistic
     saturation is *exactly* constant beyond roughly ``κ + 37·s`` — not merely nearly
     constant. A channel pushed past that point has a true marginal return of exactly zero
-    and SLSQP sees a zero gradient rather than a small one. With κ=25 that flat region
-    begins around 43 £k/week when s=0.5, but not until around 320 £k/week when s=8. Since
-    PREREGISTRATION.md fixes no value for s, the choice decides whether the flat region is
-    reachable at all inside the optimiser's m_c ∈ [0, 3] range.
+    and SLSQP sees a zero gradient rather than a small one. With κ=25 the flat region
+    begins around 43 £k/week when s=0.5, but not until around 320 £k/week when s=8.
+
+    D2 fixes s = κ/4, which puts the plateau at 11·κ — far above any spend reachable at the
+    optimiser's upper bound of m_c = 3. D2 requires `truth.py` to assert that rather than
+    assume it; this test pins the mechanism the assertion will be guarding against.
     """
     half_saturation = 25.0
     flat_from = half_saturation + 40.0 * scale
