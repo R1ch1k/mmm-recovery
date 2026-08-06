@@ -1438,3 +1438,71 @@ superseded number in place and will fail the moment the docstring is corrected**
 documents as a 31-minute run imports the module and exits silently. (c) The bound check and the
 flighting check exclude failed solves without writing a `solve_failed` marker, unlike the sweep;
 the README now discloses the affected `n` for every arm, but the harnesses should record it.
+
+### D39 — 2026-08-06 — The plateau sweep regenerated. It does not reproduce, and the new figure is authoritative.
+
+**A deliberate, single exception to a scope freeze, with the handling pre-committed in writing
+before the run.** The README's centrepiece — "177 of 780 grid points within 1% of the true
+parameters' CV score, implied TV contribution £43,938k to £240,522k, a 5.5× spread" — rested on a
+harness that was never committed. The exception was justified on the ground that regenerating an
+already-published number can only expose an error, never manufacture a finding. The commitment was:
+if it fails to reproduce, **the regenerated number is authoritative**, the sweep is *not* tuned to
+recover 177, and the discrepancy is logged with both values and the likely cause. It failed to
+reproduce. `src/mmm_recovery/plateau.py` is the committed module; `results/plateau_sweep.csv` is its
+output.
+
+| | Original (uncommitted harness) | Regenerated (`plateau.py`, noisy) |
+|---|---|---|
+| Truth's CV RMSE | 3.63160 | **30.94153** |
+| Bias at the true hyperparameters | 2.4% | **−7.5%** |
+| Grid points within 1% of it | 177 of 780 | **639 of 780** |
+| TV contribution across that set | £43,938k – £240,522k | **£15,138k – £248,075k** |
+| Spread | 5.5× | **16.4×** |
+| \|bias\| across that set | 0.5% – 362.6% | **0.2% – 377.2%** |
+
+**The likely cause is identified rather than guessed: the original predates D22.** Its quoted truth
+CV of 3.63160 is reproducible under neither current configuration — with D22's ten-column controls
+the noiseless truth scores 0.00002 and the noisy series 30.94153 — and 3.63 £k per week is the size
+of the structured residual D22 records for §4's original six-column control list (2.45 £k per week).
+The original also reports 2.4% bias at the true hyperparameters, where D22's controls make recovery
+*exact*. So the published plateau describes a control block the study abandoned, and it has been
+quoted as the current mechanism ever since.
+
+**What is the same, established rather than assumed.** C0, seed 0: the original's maximum bias of
+362.6% against £240,522k implies a true TV contribution of £51,989k, and
+`truth.incremental_contribution` on C0 seed 0 returns exactly £51,989k. Grid size 780 is matched at
+26 α × 30 κ. The 1% band is the original's, applied multiplicatively to the truth's CV.
+
+**What differs, listed because the original cannot be re-read.** The control block (ten columns
+against six). The series — the regeneration's primary arm is the **noisy** one, which is what the
+estimator sees and what every gate is computed on; the original's CV of 3.63 implies noiseless.
+α is swept linearly across `SearchBounds.hill_shape` and κ log-uniformly across
+`half_saturation_ratio`, matching how `_draw_hyperparameters` draws them; the original's grid
+spacing is not recorded. TV's λ is held at truth along with all four other channels' full triples.
+
+**The regenerated result is stronger than the one it replaces, which is worth saying plainly because
+it would be convenient to claim and is therefore the part to check hardest.** Two arms, same grid:
+
+- **Noiseless, correct controls: the truth is uniquely identified.** The best competing grid point
+  scores 0.051795 against the truth's 0.00002 — **2,590× worse** — and is only 3.3% wrong. Zero of
+  780 fall within 1% of the truth, so *the 1% band is degenerate on this arm* and that number should
+  not be quoted as though it were comparable to 639. The honest statement is that with the correct
+  functional form, the correct controls and no noise, nothing on the grid comes close.
+- **Noisy, at the study's own noise level: the objective goes flat.** 639 of 780 within 1%, and
+  **116 of 780 fit strictly better than the truth**. The single best-fitting point on the whole grid
+  is **42.8% wrong** (£29,757k against £51,989k). Across the near-tied set the rank correlation
+  between CV score and \|bias\| is only +0.416.
+
+**So the mechanism is sharper than "the functional form is unidentified".** It is that noise of the
+size §2 specifies — sd 29.32 £k per week against a media series whose own sd is 16.8 — erases the
+curvature the level is identified through. The form is identifiable in principle and is not
+identifiable from this data. That is a more precise claim than the one it replaces and it is now
+reproducible from a clean checkout.
+
+**Downstream edits made in the same pass**, since the retired figures were load-bearing in three
+places: `README.md`'s mechanism section and its reading-order note about the missing harness; the
+strict-xfail reason string in `tests/test_estimator.py`, which quoted 177 and the £43,938–240,522
+range; and `docs/WHEN-TO-TRUST-YOUR-MMM.md`, which quoted "177 of 780" and "£44m to £241m". D23's
+and D21's own text stands as written per this log's rule; this entry is their forward pointer.
+
+**Scope closes again here.** No further runs.

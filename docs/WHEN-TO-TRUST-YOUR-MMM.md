@@ -63,10 +63,19 @@ roughly the same range, an enormous effect that saturates early and a modest eff
 late look *identical* over the range you actually spent in. The data cannot tell them apart.
 
 We measured this directly. Holding four channels at their true settings and varying only TV's, out
-of 780 candidate settings **177 of them fitted the data essentially as well as the true one** — and
-across those near-identical fits, the estimated contribution of TV ranged from about **£44m to
-£241m**. A five-and-a-half-fold spread in the answer, with nothing in the data to choose between
-them.
+of 780 candidate settings **639 of them fitted the data essentially as well as the true one** — and
+across those near-identical fits, the estimated contribution of TV ranged from about **£15m to
+£248m**. A sixteen-fold spread in the answer, with nothing in the data to choose between them.
+
+Worse: **116 of the 780 fitted the data *better* than the true answer did**, and the single
+best-fitting one was 43% wrong.
+
+Here is the part that pins down what is really going on. When we removed the random week-to-week
+noise from the sales figures and left everything else alone, the problem vanished — the true setting
+became the clear winner by a factor of about 2,600, and the runner-up was only 3% off. So the shape
+of the curve is not the problem in principle. **Ordinary noise, of the size any real business has, is
+enough to wipe out the signal the model needs.** More history does not remove it, because the noise
+comes with the history.
 
 The model still picks one. It has to. It reports it with a confidence interval. The interval is too
 narrow, because it prices the wrong uncertainty.

@@ -57,8 +57,8 @@ large.** The pre-registered optimiser (§3) may take any channel to zero or to 3
 and under it the advice is worse than doing nothing in **160 of 200** simulated worlds (80.0%, 95%
 CI 73.9–85.0%). Under a two-sided ±30% planning guardrail — no channel switched off, no channel
 raised by more than a third — it is worse in **48 of 200**, and it *beats* the status quo 76.0% of
-the time. That guardrail
-check was pre-committed and it did not go this study's way; it is reported as it landed (D35, D37).
+the time. That guardrail check was pre-committed and it did not go this study's way; it is reported
+as it landed (D35, D37).
 What survives it is that 76.0% still fails the pre-registered 90% threshold, on an interval of
 [69.6%, 81.4%] that excludes it. **A governed MMM is far less destructive and still not good
 enough.** The unconstrained figure never appears here without the governed one beside it.
@@ -151,10 +151,41 @@ within-family non-identification Dew et al. treat as established background, cit
 estimating it, and name the correctly-specified case as open (p. 34).
 
 That is directly measurable, and it is the study's centrepiece figure rather than a footnote.
-Holding four channels at their true values and sweeping only TV's saturation parameters, **177 of
-780 grid points sit within 1% of the true parameters' cross-validation score, and across that
-near-tied set the implied TV contribution ranges from £43,938k to £240,522k** — a 5.5-fold spread in
-the answer, with essentially nothing in the data to choose between them.
+Holding four channels at their true values and sweeping only TV's saturation parameters over a
+26 × 30 grid, on C0 seed 0:
+
+| | Noiseless sales | Noisy sales, as the estimator sees them |
+|---|---|---|
+| Truth's CV RMSE | 0.00002 | 30.94153 |
+| Best competing grid point | 0.051795 — **2,590× worse** | 30.91330 — **better than the truth** |
+| Grid points fitting better than the truth | 0 of 780 | **116 of 780** |
+| Grid points within 1% of the truth's score | 0 of 780 (band degenerate) | **639 of 780** |
+| Implied TV contribution across the near-tied set | — | **£15,138k to £248,075k, a 16.4× spread** |
+| Error of the single best-fitting point | −3.3% | **−42.8%** |
+
+**Read the two columns against each other, because the contrast is the mechanism.** With the correct
+functional form, the correct controls and no noise, the truth is uniquely identified — nothing on the
+grid comes within three orders of magnitude of it, and the runner-up is only 3.3% wrong. Add noise at
+the level §2 specifies — sd 29.32 £k per week, against a true media series whose own standard
+deviation is 16.8 — and the objective goes flat: 639 of 780 transforms are indistinguishable from the
+truth, 116 of them fit it strictly *better*, and the best-fitting point on the entire grid is 42.8%
+wrong. Across the near-tied set the correlation between CV score and absolute error is only +0.416.
+
+So the claim is not "Hill saturation is unidentifiable". It is the sharper and more uncomfortable
+one: **the form is identifiable in principle and is not identifiable from this data**, because noise
+of an entirely ordinary size erases the curvature the level is identified through. Zero of 780 in the
+noiseless column is a degenerate band — 1% of a score that is essentially zero — and is reported as
+such rather than as a figure comparable to 639.
+
+> **These numbers replace the ones this section carried until D39, and the replacement was
+> pre-committed.** The README previously reported "177 of 780 … £43,938k to £240,522k, a 5.5-fold
+> spread" from a harness that was never committed. Regenerating it as
+> [`plateau.py`](src/mmm_recovery/plateau.py) did not reproduce those figures. The cause is
+> identified: the original's quoted truth CV of 3.63160 with 2.4% bias matches neither current arm,
+> and 3.63 £k per week is the size of the structured residual D22 records for the **superseded
+> six-column control block** — so the published plateau described a configuration the study
+> abandoned. The regenerated figure is authoritative, the sweep was not tuned to recover 177, and
+> both values are in D39 with the full list of what differs.
 
 Three findings rule out the comfortable explanations:
 
@@ -518,7 +549,7 @@ What is left, stated plainly and without the word "novel":
    by fixing adstock rather than estimating it; they name the correctly-specified case as open
    (p. 34). This measures its decision consequences.
 2. **Production tooling.** Google's shipping Meridian on default priors, not a bespoke framework.
-3. **Pre-registration**, with every deviation dated in a log that now runs to 38 entries.
+3. **Pre-registration**, with every deviation dated in a log that now runs to 39 entries.
 4. **Ground truth by intervention.** True contribution is `sales(spend) − sales(spend_c := 0)`
    evaluated on the generating process, never a comparison of β̂ to β.
 
@@ -588,10 +619,11 @@ No network calls, no API keys, no data downloads. Every stochastic step takes an
 
 ```bash
 uv sync
-uv run pytest                              # 418 tests: 417 pass, 1 strict xfail
+uv run pytest                              # 425 tests: 424 pass, 1 strict xfail
 uv run python -m mmm_recovery.sweep        # the exploratory sweep, ~1 min
 uv run python -m mmm_recovery.robustness   # bound check + the ±30% guardrail, ~2 min
 uv run python -m mmm_recovery.flighting    # the flighted-spend validity check, ~2 min
+uv run python -m mmm_recovery.plateau      # the identification plateau (D39), ~3 min
 ```
 
 The sweep refuses to write results unless its `spend_log_sd = 0.30` column reproduces D23's published
@@ -614,15 +646,15 @@ is computed from it.
 # Reading order
 
 1. [`PREREGISTRATION.md`](PREREGISTRATION.md) — the binding specification, and the deviations log
-   D1–D38 that records every departure from it with a date and a reason.
+   D1–D39 that records every departure from it with a date and a reason.
 2. [`docs/WHEN-TO-TRUST-YOUR-MMM.md`](docs/WHEN-TO-TRUST-YOUR-MMM.md) — one page, no equations, for a
    marketing reader.
 3. [`results/`](results/) — the raw per-seed output behind the C0 table, the exploratory sweep, the
-   bound check and the flighting check. **Not** behind the mechanism section: the plateau sweep and
-   the Nelder–Mead diagnostic were run by a harness that was never committed, and they survive only
-   as numbers in the deviations log and in the strict-xfail reason string that `pytest -rx` prints.
-   That is a real reproducibility gap and re-running them as a committed module is the first
-   outstanding task.
+   bound check, the flighting check and, since D39, the plateau grid. The **Nelder–Mead diagnostic**
+   is the one thing here still without a committed harness: it survives only as numbers in the
+   deviations log and in the strict-xfail reason string that `pytest -rx` prints. Given what
+   regenerating the plateau turned up — a published centrepiece describing a control block the study
+   had abandoned — that remaining gap should be read as a live risk rather than a formality.
 
 # References
 
