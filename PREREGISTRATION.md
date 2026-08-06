@@ -1506,3 +1506,161 @@ range; and `docs/WHEN-TO-TRUST-YOUR-MMM.md`, which quoted "177 of 780" and "£44
 and D21's own text stands as written per this log's rule; this entry is their forward pointer.
 
 **Scope closes again here.** No further runs.
+
+### D40 — 2026-08-06 — Pathak, Jeunen and Lambert (2026) is adjacent prior art, not a forward reference to this design.
+
+**The README carried them as a one-line endorsement and that undersold them badly.** The line read:
+"Pathak, Jeunen and Lambert (2026) independently name this design as their own open problem", with a
+quotation from their future work. Read properly — the full text of arXiv:2604.25977, not the abstract
+— the paper is the closest published work to this study, and on the specific point the README was
+using them to support, **they got there first.**
+
+**What they do.** *Auditing Marketing Budget Allocation with Hindsight Regret* (Pathak, Jeunen &
+Lambert, Expedia Group and aampe, 28 April 2026, 6 pages) fits per-asset, per-epoch saturating
+spend–return curves — exponential saturation plus a Matérn-2.5 GP on the residual and a second GP on
+log-variance — to real historical allocation logs, `P = 8` portfolios × `H = 8` horizons. It then
+solves a constrained optimiser over those fitted curves for a benchmark trajectory, and draws Monte
+Carlo samples from the fitted location-scale model to produce a distribution over
+`Reg := R(s*) − R(s_real)`, summarised as expected lift, σ, a credible interval and `P(Reg > 0)`.
+
+**Three things the README's framing got wrong, all in the same direction.**
+
+| Claimed | Actual |
+|---|---|
+| They name this design as their open problem | True, and it is the *least* of the relationship |
+| Their guardrails are a property of the benchmark, not an intervention under test | **Wrong.** δ is their headline sweep: ±20/30/40/50% and unconstrained (§5.2, Table 2), Figure 3 is "Ablation of stability", eq. (9) selects δ*, and RQ3 is "What is the effect of operational stability constraints?" |
+| Measuring the guardrail's effect distinguishes this study | **Wrong — it is an overlap, and theirs is prior.** They sweep ±30% specifically |
+
+**D37's mechanism is stated in their paper.** §4.3: "The distinction between oracle variants arises
+solely from differences in the feasible set." §5.1: oracle allocations "are computed once per
+feasibility specification and then held fixed." That is the same fact as this study's *the guardrail
+re-solves the same fitted surfaces, so it moves the decision a great deal and leaves the contribution
+estimates exactly where they were*. Their qualitative finding — moderate reallocations capture most
+of the measurable gain, larger shifts move into weak-support regions with higher uncertainty — is
+this study's 80% → 24% seen through a different instrument.
+
+**The real difference, which survives the correction: the reference point.** Their regret benchmarks
+the **historically realised spend trajectory** against a model-optimised one; the fitted surface is
+the yardstick and positive regret means the model would have done better. This study benchmarks the
+**model's recommendation** against a true optimum obtained by intervening on the generating process;
+the fitted surface is the defendant. Both of their arms are re-scored through that same fitted
+surface (§4.4, step 2), so their audit is model-internal on both sides rather than logged outcome
+against model counterfactual.
+
+**How far that difference actually reaches, stated narrowly because the first draft overstated it.**
+Step II maximises the plug-in mean `μ̂` (eq. 16) and Step III scores a *perturbed posterior draw*,
+`μ̂ + η⁽ʲ⁾ + σ̂·ε⁽ʲ⁾` — not the same `μ̂` twice, which is what an earlier version of this entry
+claimed. The defensible statement: **inside** the realised spend range, systematic misspecification
+is exploited by the optimiser and re-emerges as recoverable opportunity cost rather than as error;
+**outside** it, eq. (15)'s support-aware variance inflation and the boundary-anchored isotonic
+projection do make the optimiser pay, and §4.3.3 records uncertainty-aware regret *falling* as δ
+widens for exactly that reason. So the penalty exists, but it arrives as dispersion and lost
+detectability and never as a signed error. "Bias is invisible to their instrument by construction"
+was too strong and is withdrawn; "bias is priced bluntly and only off-support" is what the text
+supports. They state the limit themselves (§5): "Our goal is not to recover a ground-truth global
+optimum, but to assess whether the framework yields stable and decision-relevant retrospective
+diagnostics under realistic feasibility constraints."
+
+**A second real difference, and it is larger than the first draft said.** Their δ is an epoch-to-epoch
+chain constraint, `s_{e−1,i}(1−δ) ≤ s_{e,i} ≤ s_{e−1,i}(1+δ)` (eq. 17), binding only for `e > 1`, and
+their objective (16) never references `s_real`. So δ smooths the counterfactual trajectory against
+*itself* rather than tethering it to the status quo, and as written a "±30%" oracle can sit
+arbitrarily far from what was actually spent — epoch 1 has no anchor at all. It is not merely that
+the constraint compounds. This study's is a single per-channel band around the status quo. The two
+±30% numbers are not comparable and the README now says so. *(Whether an `s_0` anchor exists is
+inferred from the absence of one in the stated objective; the paper does not say.)*
+
+**Priority is not ambiguous.** Their preprint is dated 28 April 2026. This repository's first commit
+is 5 August 2026.
+
+**The quotation was verbatim and was truncated.** It appears in §6, *Conclusion and Future Work*, and
+the sentence does not stop where the README stopped it: "An important next step is a semi-synthetic
+benchmark with known response structure and oracle regret, **which would enable direct
+recovery-based validation of the framework.**" The dropped clause states the purpose, so no meaning
+was distorted, but a terminal full stop after "oracle regret" quoted a first clause as a whole
+sentence. The full sentence and the section reference are now in the README.
+
+**Verification, because a citation is a claim.** The PDF was downloaded and the text extracted
+locally rather than relying on a fetch-summariser handed the target string, which can confabulate a
+match. Two independent readers were run on the paper: one to locate the quotation, one to
+characterise the method, and a third pass was tasked specifically with attacking the resulting
+characterisation for *overstated* differences. The reading recorded here is the one that survived
+that attack. The proposed reading it replaced — "their guardrails are a property of the benchmark
+rather than an intervention under test" — was refuted from Table 2, Figure 3 and eq. (9). The
+adversarial pass then overturned four claims in this entry's own first draft: the "human" gloss, the
+same-`μ̂` claim, "invisible by construction", and the characterisation of the ±30% constraint. All
+four are corrected above rather than softened, and all eighteen supporting quotations were
+independently located in the LaTeXML full text at the sections and equation numbers cited.
+
+**One trap in the source, recorded so it is not walked into later.** §5.1's prose refers to "moderate
+thresholds (ε ∈ {0.5, 0.6})" while Table 2 reports only ε = 0.6 / 0.7 / 0.8 / 0.9. That is an
+internal inconsistency in their paper. There is no ε = 0.5 column; do not cite one.
+
+**No number in this study changes.** This is a prior-art and framing correction only. Nothing was
+re-run.
+
+### D41 — 2026-08-06 — The fourth occupied claim. The pattern is now stated in the README.
+
+**Four claims in this project have turned out to be already occupied, and each was found by a single
+search run after the claim had been drafted.**
+
+| Claim | Occupied by | Found |
+|---|---|---|
+| The **genre** — evaluating MMM against a simulator with known ground truth | Chan & Perry (2017); Zhang & Vaver (2017), open-sourced as `google/amss` | Prior-art sweep |
+| The **mechanism** — within-family non-identification that cross-validation cannot detect | Dew, Padilla & Shchetkina (2024), citing Jin et al. (2017) | Prior-art sweep |
+| The **metric** — the rate at which acting on a noisy readout leaves the business worse off than doing nothing | Haus (Hillery 2026), at 38% | D31; the claim was withdrawn, not narrowed |
+| The **framing** — auditing an allocation by regret against a constraint-faithful benchmark, guardrail swept as the object of study | Pathak, Jeunen & Lambert (2026) | D40 |
+
+Each search was cheap. Each was run late. Each returned prior work that the draft had claimed as its
+own. That is recorded here as a fact about how the project went, and no defence is offered for it:
+the searches should have preceded the drafts.
+
+**What this does not license.** It is not an argument that the remaining claims are safe, and the
+absence of a fifth entry is not evidence that a fifth does not exist — the base rate established by
+the first four is the reason to assume otherwise. The four items in "What is left, stated plainly and
+without the word 'novel'" have not been through a search of the same depth as the metric and the
+framing received.
+
+### D42 — 2026-08-06 — Haus's 38% carries a reallocation cap. The comparator is the governed arm, not the unconstrained one.
+
+**Found while verifying D31's figures against the source page, not by re-running anything.** The
+prior-art record at D31 captured Haus's headline correctly — "acting on noisy results left the
+business worse off than doing nothing 38% of the time", 36 scenarios × 1,000,000 runs, "the true
+performance of every channel is held fixed" — and all of that re-verified against the raw HTML.
+What it did not capture is the **action space** those decisions were taken in, and the README then
+built a magnitude comparison on top of the gap.
+
+**The article's simulated decisions are capped.** Its setup states that after every readout "budget
+shifts toward whatever looks best, **capped by a reallocation limit**"; the scenarios it names use a
+20% cap, and the aggregate 38% is pooled across three such limits. So the README's "this study's 20%
+is worse than Haus's worst arm" set an **unconstrained** optimiser — §3's space, free to zero a
+channel or triple it — against a **capped** one. That is the failure mode `CLAUDE.md` lists by name
+and that D37 exists to prevent, committed in the one section of the document whose subject is
+citation discipline.
+
+| Comparison | Haus (noisy arm) | This study | Reading |
+|---|---|---|---|
+| As previously written | beats baseline 62% | beats status quo **20.0%** (§3 unbounded) | Invalid — different action spaces |
+| Like for like, approximately | beats baseline 62% | beats status quo **76.0%** (±30% band) | This study's governed arm is *better* |
+
+**The sign of the comparison inverts**, which is why this is logged rather than quietly reworded. The
+README now leads the comparison with the governed arm and states the unconstrained figure beside it,
+and flags that even the governed pairing is loose: their cap is per readout and compounds across a
+year of sequential decisions, this study's is a single band around the status quo.
+
+**Two further qualifications now stated in the README.** Their 38% and their 62% are one statistic
+seen from two sides (38 + 62 = 100), so quoting both as separate findings double-counts a single
+result; the precise arm's counterparts are 18% and 82%. And the article is explicit that it models
+random noise only — "not systematic bias, unrepresentative market selection, data-quality failures"
+— so on its own terms 38% is a floor, and the README says so.
+
+**What does not change.** D31 stands: the metric was and remains not novel, and the withdrawal of
+that claim is unaffected. The estimator-class difference the README already drew — Haus fit no model,
+so their quantity is the cost of *noise* in an unbiased readout while this study's is the cost of
+*non-identification* — also stands. Only the magnitude comparison was wrong.
+
+**Retrieval note.** `WebFetch` returned a model summary on both attempts and on the second pass
+corrupted "36 scenarios × 1M runs" into "36 million scenarios". Every figure above comes from the raw
+HTML pulled with `curl` and stripped, not from a summariser. The byline is verified twice in that
+raw text: Patrick Hillery, Senior Solutions Consultant at Haus, 23 July 2026. The reference entry
+previously carried a placeholder for both and now carries neither.

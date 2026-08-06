@@ -4,37 +4,42 @@
 on. Under the cleanest conditions the study could construct it does not — and the one intervention
 that most improves the model's estimates leaves the budget advice where it was.**
 
-Flight three of five channels — two-to-six-week bursts, dark weeks between, the same annual budget
-concentrated into fewer weeks, the way brand media is actually bought — and *contribution error*
-improves more than anywhere else in this study. On a flighted variant of the clean condition, the
-median absolute relative error in channel contribution falls from **0.540 to 0.309** and the share of
-runs whose median channel error lands inside the pre-registered 20% rises from **4.5% to 25.3%**.
-Two counterweights belong in the same breath rather than in a footnote: interval coverage gets
-*worse* (G2 0.417 → 0.323), and channel ranking **reaches** its threshold rather than clearing it —
-G3 lands exactly on 0.800, with 104 of 198 seeds at or above 0.80, on a statistic that moves in
-steps of 0.1 across five channels.
+Three interventions, each changing exactly one thing, measured on the rate at which the model's
+recommended budget beats leaving the budget alone:
 
-The budget decision shows **no measurable improvement**. The recommendation beats leaving the budget
-alone in 20.7% of runs against 20.0%. Paired over the 198 seeds both arms solved — where the
-baseline is 19.7% — the difference is **+1.0 percentage point, 95% CI [−7.1, +9.1]**, McNemar
-*p* = 0.90. It is worse than doing nothing in 79.3% of runs against 80.0%. Both of those are §3's
-unconstrained action space — under the ±30% guardrail described below the worse-than-nothing rate is
-24%. This is a null from a design that could not have detected a change smaller than about eight
-points, and it is reported as that rather than as a demonstration of no effect.
+| Arm | What changed | G1 contribution error | Beats status quo | 95% CI | n |
+|---|---|---|---|---|---|
+| C0 baseline | — | 0.540 | 0.200 | [0.150, 0.261] | 200 |
+| Flighted spend | the **shape** of spend | **0.309** | 0.207 | [0.156, 0.269] | 198 |
+| `spend_log_sd = 1.00` | the **amount** of variation | 0.412 | **0.462** | [0.394, 0.532] | 199 |
+| `m_c ∈ [0.7, 1.3]` | the optimiser's **action space** | 0.540 *(unchanged by construction)* | **0.760** | [0.696, 0.814] | 200 |
+
+**The arm that moved the decision most changed the estimate by exactly zero. The arm that improved
+the estimate most moved the decision by 0.007, on intervals that almost entirely overlap.** The
+guardrail re-solves the same fitted surfaces with no refit, so its G1 is the baseline's own number
+reappearing rather than a fourth measurement — which makes the table a controlled contrast rather
+than four independent readings.
+
+Flighting is the arm that carries the framing. Running TV, video and out-of-home in two-to-six-week
+bursts with dark weeks between — the way brand media is actually bought — produced the **best
+contribution estimates anywhere in this study**: median absolute relative error falls from 0.540 to
+0.309, five and a half times as many runs land inside the pre-registered 20%, and channel ranking
+reaches its threshold for the only time under something a media team would choose to do. The budget
+recommendation showed **no measurable improvement** — 20.7% against 20.0% over each arm's own solved
+runs, and 20.7% against **19.7%** once the baseline is restricted to the 198 seeds both arms solved.
+The second is the comparison the paired test uses, which is why the table's 0.007 and the paired
+**+1.0 percentage point** are not the same subtraction. That paired difference carries a 95% CI of
+[−7.1, +9.1] and McNemar *p* = 0.90 — a null from a design that could not have detected a change
+smaller than about eight points, and it is reported as that rather than as a demonstration of no
+effect. Two counterweights belong in the same breath: interval coverage gets *worse*
+(G2 0.417 → 0.323), and G3 **reaches** 0.800 rather than clearing it — 104 of 198 seeds at or above
+0.80, on a statistic moving in steps of 0.1 across five channels.
 
 **Under flighting you can learn which channels are better without learning how much better, and
-better ranking did not buy a better budget.** That is this series' framing — *attributable ≠
-incremental* — one step further in: **estimable ≠ actionable**. What this does **not** establish is
-the tidier mechanism, that the decision fails *because* the sizing fails: elsewhere in the study a
-world with better ranking and worse sizing produces a markedly better decision. That reconciliation
-is set out in full where the sweep is, not buried.
-
-**What licenses leading with this, and what does not.** D34 fixed *before the numbers existed* how a
-G1 pass or a G1 failure would be read. It pre-committed **nothing** about the decision metrics, so
-the estimation-versus-decision split above is post-hoc, and the "pre-committed" badge attaches to the
-G1 half only. The guardrail check below carries a genuine pre-commitment tied to G5 (D35). The
-baseline arm reproduces the confirmatory result to the printed digit, so the spend process is the
-only thing that differs between the two arms.
+better ranking did not buy a better budget: estimable ≠ actionable.** What this does **not**
+establish is the tidier mechanism, that the decision fails *because* the sizing fails — elsewhere in
+this study a world with better ranking and worse sizing produces a markedly better decision. That
+reconciliation is set out in full where the sweep is, not buried.
 
 **The identification failure underneath it is not new, and nothing in this repository claims to be
 first.** Dew, Padilla and Shchetkina (2024), *Your MMM is Broken*, established that nonlinear and
@@ -62,7 +67,15 @@ as it landed (D35, D37). What survives it is that 76.0% still fails the pre-regi
 [69.6%, 81.4%] that excludes it. **A governed MMM is far less destructive and still not good
 enough.** The unconstrained figure never appears here without the governed one beside it.
 
-Third in a series on measurement validity, after [`priced-in`](https://github.com/R1ch1k/priced-in)
+**How this document is arranged.** [Confirmatory results](#confirmatory-results) are the
+pre-registered study — condition C0, 200 seeds, thresholds fixed before any code ran.
+[Exploratory results](#exploratory-results), which include three of the four rows in the table
+above, were added *after* C0 failed and are **not** pre-registered; exactly what licenses this
+opening to lead with them is set out at the head of that section. Corrections to this study's own
+earlier numbers are recorded where they occur and in the deviations log, not here.
+
+Third in a series on measurement validity — this one *attributable ≠ incremental*, carried one step
+further in as *estimable ≠ actionable* — after [`priced-in`](https://github.com/R1ch1k/priced-in)
 (detectable ≠ tradeable) and `marketplace-mispricing` (detectable ≠ actionable).
 
 ---
@@ -263,6 +276,14 @@ D34, D35). Two of the three — flighting and the guardrail — had their readin
 deviations log and committed before the numbers existed, which is what licenses the opening section
 of this README to lead with one of them; that is a stronger warrant than ordinary post-hoc analysis,
 and it is still not pre-registration.
+
+**Be precise about how far that warrant extends.** D34 fixed, before the numbers existed, how a G1
+pass or a G1 failure under flighting would be read. It pre-committed **nothing** about the decision
+metrics — so the estimation-versus-decision split this README leads with is post-hoc, and the
+"pre-committed" badge attaches to the G1 half only. D35's guardrail check carries a genuine
+pre-commitment tied to G5. What is not in doubt for either arm is the comparison itself: the
+baseline arm reproduces the confirmatory result to the printed digit, so the spend process is the
+only thing differing between the flighted arm and C0.
 
 ## How much spend variation would it take? Not an achievable amount
 
@@ -538,16 +559,29 @@ reporting convention, and bounding the probability that a learned policy is wors
 is the defining quantity of safe policy improvement (Thomas et al. 2015, 2019). The finding's *shape*
 is older still — DeMiguel, Garlappi and Uppal (2009) showed an optimiser losing to a naive incumbent
 once estimation error swamps the optimisation gain, and Smith and Winkler (2006) named the mechanism
-the optimizer's curse. In marketing, Haus's incrementality-test Monte Carlo already reports the
-analogous rate: acting on noisy readouts left the business worse off than doing nothing 38% of the
-time, across 36 scenarios run a million times each with true channel performance held fixed. **This
-study's 20% is worse than Haus's worst arm, which beat the baseline 62% of the time.**
+the optimizer's curse. In marketing, Haus's incrementality-test Monte Carlo (Hillery 2026) already
+reports the analogous rate: acting on noisy readouts left the business worse off than doing nothing
+38% of the time, across 36 scenarios run a million times each with true channel performance held
+fixed. Their 38% and their "noisy arm beat a frozen-budget baseline 62% of the time" are one
+statistic seen from two sides, not two findings; the precise arm's counterparts are 18% and 82%.
 
-Haus differs in a way that is the point rather than an excuse: **they fit no model.** Measurement
-there is truth plus stipulated noise — no adstock, no saturation, no confounded demand, no design
-matrix. Their quantity is the cost of *noise* in an unbiased readout, which more data removes. This
-study's is the cost of *non-identification* in a correctly specified estimator, which more data does
-not remove.
+**Their rate is not comparable to this study's headline 20%, and the reason is the action space.**
+Haus's simulated decisions are capped by a reallocation limit — 20% per readout in the scenarios the
+article names — and the 38% is pooled across three such caps. The nearest comparator here is
+therefore the **governed** arm, not the unconstrained one: under a ±30% band this study's model beats
+the status quo 76.0% of the time against Haus's noisy 62%, while under §3's unbounded space it does
+so 20.0% of the time. Setting 20% against 62% would put an optimiser free to zero a channel beside
+one capped at a fifth, which is the comparison this document refuses to make everywhere else. Even
+the governed pairing is loose — their cap is per readout and compounds over a year of decisions,
+this study's is a single band around the status quo — so it is offered as the right order of
+magnitude, not as a like-for-like contest.
+
+Haus differs in a further way that is the point rather than an excuse: **they fit no model.**
+Measurement there is truth plus stipulated noise — no adstock, no saturation, no confounded demand,
+no design matrix — and the article is explicit that it models random noise only, not systematic bias
+or unrepresentative market selection. Their quantity is the cost of *noise* in an unbiased readout,
+which more data removes. This study's is the cost of *non-identification* in a correctly specified
+estimator, which more data does not remove. On its own terms their 38% is a floor.
 
 What is left, stated plainly and without the word "novel":
 
@@ -557,12 +591,66 @@ What is left, stated plainly and without the word "novel":
    by fixing adstock rather than estimating it; they name the correctly-specified case as open
    (p. 34). This measures its decision consequences.
 2. **Production tooling.** Google's shipping Meridian on default priors, not a bespoke framework.
-3. **Pre-registration**, with every deviation dated in a log that now runs to 39 entries.
+3. **Pre-registration**, with every deviation dated in a log that now runs to 42 entries.
 4. **Ground truth by intervention.** True contribution is `sales(spend) − sales(spend_c := 0)`
    evaluated on the generating process, never a comparison of β̂ to β.
 
-Pathak, Jeunen and Lambert (2026) independently name this design as their own open problem: "An
-important next step is a semi-synthetic benchmark with known response structure and oracle regret."
+**Pathak, Jeunen and Lambert (2026) are the closest published work to this one, and the overlap is
+larger than the difference.** *Auditing Marketing Budget Allocation with Hindsight Regret*
+(arXiv:2604.25977, April 2026) fits saturating spend–return curves to real allocation logs, solves a
+constrained optimiser over those fitted curves for a benchmark trajectory, and propagates outcome
+noise and response-surface uncertainty through Monte Carlo to report a regret distribution, an
+expected lift and a probability of improvement. **The guardrail as an object of study is theirs, and
+they published first.** The stability bound δ is their headline sweep — ±20%, ±30%, ±40%, ±50% and
+unconstrained (§5.2, Table 2, Figure 3) — chosen by an explicit selection rule (§4.1, eq. 9), with
+"what is the effect of operational stability constraints?" as a stated research question. So is the
+mechanism this repository records at D37: their §4.3 states that "the distinction between oracle
+variants arises solely from differences in the feasible set", which is the same fact as *the
+guardrail moves the decision a great deal and leaves the contribution estimates exactly where they
+were*. They sweep ±30% specifically, and their finding — moderate reallocations capture most of the
+measurable gain while larger shifts move into weak-support regions — is this study's 80% → 24%
+seen through a different instrument.
+
+**The real difference is the reference point, and it is not that they leave the guardrail
+unmeasured.** Their regret is `R(s*) − R(s_real)`: the historically realised spend trajectory
+measured against a model-optimised benchmark, where the fitted surface is the yardstick and positive
+regret means the model would have done better. This study's regret measures the model's
+*recommendation* against a true optimum obtained by intervening on the generating process, so the
+fitted surface is the defendant rather than the ruler. Both of their arms are re-scored through that
+same fitted surface (§4.4), so their audit is model-internal on both sides rather than logged outcome
+against model counterfactual. The consequence is specific and worth stating precisely: their Step II
+maximises the plug-in mean `μ̂` and Step III scores a perturbed draw from the same posterior, so
+**inside the realised spend range** systematic misspecification is exploited by the optimiser and
+re-emerges as recoverable opportunity cost rather than as error. Outside it they do penalise the
+optimiser — eq. (15)'s support-aware variance inflation and a boundary-anchored isotonic projection,
+which is why §4.3.3 notes that uncertainty-aware regret can *fall* as δ widens — but the penalty
+arrives as dispersion and lost detectability, never as a signed error. So bias is priced bluntly and
+only off-support, which is a narrower claim than "invisible", and it is the quantity this study is
+built to measure. They state the limit themselves: "Our goal is not to recover a ground-truth global
+optimum" (§5), and §6 names the gap — "An important next step is a semi-synthetic benchmark with
+known response structure and oracle regret, which would enable direct recovery-based validation of
+the framework." This study is of that kind without being that benchmark: §6 wants one that would
+validate *their* pipeline, and what is validated here is a ridge MMM with adstock and a ten-column
+control block. The relationship is complementary and anticipated, and it is **not** evidence that
+the design was unoccupied.
+
+**One caution before reading the two ±30% results side by side: they are not the same constraint.**
+Theirs is an epoch-to-epoch chain bound, `s_{e−1,i}(1−δ) ≤ s_{e,i} ≤ s_{e−1,i}(1+δ)` (eq. 17),
+binding only for `e > 1`, and their objective never references `s_real` — so δ smooths the
+counterfactual trajectory against itself rather than tethering it to the status quo, and as written a
+"±30%" oracle can sit arbitrarily far from what was actually spent. This study's is a single
+per-channel band around the status quo. The two numbers are not comparable.
+
+**Four claims in this project have turned out to be already occupied, and each was found by a single
+search run after the claim had been drafted.** The *genre* — evaluating MMM against a simulator with
+known ground truth — is Chan and Perry (2017) and Zhang and Vaver's (2017) `google/amss`. The
+*mechanism* — within-family non-identification that cross-validation cannot detect — is Dew et al.
+(2024), citing Jin et al. (2017). The *metric* — the rate at which acting on a noisy readout leaves
+the business worse off than doing nothing — is Haus (2026), and that claim was withdrawn rather than
+narrowed (D31). The *framing* — auditing an allocation by regret against a constraint-faithful
+benchmark, with the guardrail swept as the object of study — is Pathak, Jeunen and Lambert (2026),
+recorded at D40. In each case the search was cheap, it was run late, and it returned prior work that
+the draft had claimed as its own. This paragraph is D41.
 
 # Limitations
 
@@ -663,7 +751,7 @@ is computed from it.
 # Reading order
 
 1. [`PREREGISTRATION.md`](PREREGISTRATION.md) — the binding specification, and the deviations log
-   D1–D39 that records every departure from it with a date and a reason.
+   D1–D42 that records every departure from it with a date and a reason.
 2. [`docs/WHEN-TO-TRUST-YOUR-MMM.md`](docs/WHEN-TO-TRUST-YOUR-MMM.md) — one page, no equations, for a
    marketing reader.
 3. [`results/dashboard.html`](results/dashboard.html) — the plateau and the three-arm comparison
@@ -684,7 +772,9 @@ is computed from it.
   Inefficient Is the 1/N Portfolio Strategy?* Review of Financial Studies, 22(5), 1915–1953.
 - Dew, R., Padilla, N., & Shchetkina, A. (2024). *Your MMM is Broken: Identification of Nonlinear and
   Time-varying Effects in Marketing Mix Models.* arXiv:2408.07678.
-- Haus. *Fast, Confident, and Wrong: The Risk of Noisy Incrementality Tests.*
+- Hillery, P. (2026, 23 July). *Fast, Confident, and Wrong: The Risk of Noisy Incrementality Tests.*
+  Haus. https://www.haus.io/blog/fast-confident-and-wrong-the-risk-of-noisy-incrementality-tests —
+  a year of marketing decisions simulated 36 million times.
 - Jin, Y., Wang, Y., Sun, Y., Chan, D., & Koehler, J. (2017). *Bayesian Methods for Media Mix
   Modeling with Carryover and Shape Effects.* Google Inc.
 - Pathak, N., Jeunen, O., & Lambert, E. (2026). *Auditing Marketing Budget Allocation with Hindsight
@@ -697,6 +787,6 @@ is computed from it.
   *Preventing undesirable behavior of intelligent machines.* Science, 366(6468), 999–1004.
 - Xu, S., Thomadsen, R., & Zhang, D. (2025). *The Winner's Curse in Data-Driven Decision-Making:
   Evidence and Solutions.* SSRN 5930537. **Cited from its abstract; the full text was not obtainable
-  and the claim below is unverified.**
+  and the claim attributed to it in Limitations is unverified.**
 - Zhang, S., & Vaver, J. (2017). *Introduction to the Aggregate Marketing System Simulator.* Google
   Inc.
