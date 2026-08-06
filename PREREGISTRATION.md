@@ -823,6 +823,11 @@ with the ratio immediately after. Neither number changes.
 sentence above is wrong. 2.7% is the shortfall from the *optimum*, not the loss against doing
 nothing. The ordering rule this entry sets is unaffected.
 
+**Scoped by D38:** the clause immediately above stays true of the absolute-vs-ratio ordering this
+entry sets, and says nothing about which of the two *absolute* figures leads. From D38 the
+status-quo figure leads and the optimum figure follows. The 1.10% quoted twice above is also
+retired — the 200-seed median is 1.16% (D29).
+
 ### D28 — 2026-08-05 — The optimiser start seed is fixed at 0. Recovered, not recorded.
 
 **Reproducibility repair, found while building D26's sweep.** D23's five-gate table was
@@ -887,6 +892,12 @@ both, in this form:
 
 D27's ordering rule is unchanged: the absolute figure leads, the ratio follows. Only the
 comparator in its prose is corrected, and nothing that was computed changes.
+
+**Scoped by D38, and one prescription above superseded by it.** The clause immediately above remains
+true of the absolute-vs-ratio axis. The bullet pair prescribed above — optimum shortfall first,
+status-quo loss second — is **reversed** from D38 onward: the status-quo figure leads. This entry's
+correction, its measured table and its percentiles all stand. D38 also corrects this entry's own
+attribution: "§4" contains no achievable-lift figure, and the third site quoting 1.10% is **D23**.
 
 **A second number in the same family does not reproduce.** §4, D19 and D27 all quote C0's
 achievable lift as 1.10% of sales. The 200-seed median is **1.16%** (p10 1.11%, p90 1.22%,
@@ -1228,3 +1239,202 @@ achievable lift from 1.160% to 0.623%. Under the guardrail the *truth* sits 1.97
 floor and the model 1.52. The model is not failing because it makes wild recommendations — it is
 failing because it is wrong about which channels deserve the money, and a guardrail limits how
 much damage being wrong can do. It bounds the consequence, not the error.
+
+### D38 — 2026-08-06 — The status-quo comparator leads. D29's ordering-by-example is reversed; its correction stands.
+
+**Raised as an uncorrected arithmetic error in D27, and it is not one.** For the record, because
+anyone reading D27 in isolation will raise it again: D27 says the recommendation "costs 2.7% of
+total sales against doing nothing"; 2.7% is the shortfall from the **optimum**; and **D29 already
+corrected exactly that** on 2026-08-05, measured both quantities at 200 seeds, annotated D27 in
+place with a pointer, and the corrected form is already carried in `README.md` and
+`docs/WHEN-TO-TRUST-YOUR-MMM.md`. No arithmetic changes here and no published number moves. This
+entry exists because something else in the same sentence does change.
+
+**What changes is which of the two *absolute* figures leads, and the distinction matters because
+two live entries say the ordering is untouched.** D27's rule is an ordering over {absolute figure,
+normalised ratio}, and 1.58% is also an absolute figure, so that rule survives the swap intact — the
+ratio still follows either way. What the swap actually overturns is **D29's ordering of the two
+absolutes, which D29 fixed by example and never argued**: "the recommended allocation falls 2.7% of
+total sales short of the best available one … and at the median it destroys 1.6% of total sales
+against doing nothing." That order is reversed from here.
+
+**One prescription is superseded and two clauses are scoped, and the difference between those matters
+enough to separate them.**
+
+- **Superseded — D29:881–886.** "The write-up uses both, in this form: — the recommended allocation
+  falls 2.7% of total sales short of the best available one …; — and at the median it destroys 1.6%
+  of total sales against doing nothing." That is the live instruction the new order breaks. It is
+  **retracted and replaced** by the order below. Nothing else in D29 changes; its correction and its
+  measured table stand entirely.
+- **Scoped, not retracted — D27:824 and D29:888.** "The ordering rule this entry sets is unaffected"
+  and "D27's ordering rule is unchanged: the absolute figure leads, the ratio follows" are both still
+  **true**, because they concern the absolute-vs-ratio axis and 1.58% is also an absolute. Read them
+  as saying nothing about the order between the two absolute figures, which is what this entry sets.
+
+Both D27 and D29 carry a one-line pointer to this entry, added in place. That is the same mechanism
+D29 used on D27, and declining it here while citing it there as the reason the earlier correction is
+discoverable would have been having it both ways.
+
+The new order:
+
+1. **The loss against doing nothing leads**, with its comparator named in the same sentence.
+2. The shortfall from the optimum follows, also named.
+3. The regret ratio follows that.
+
+**The rationale is not only that practitioners face the status quo. There is a measurement argument,
+and it is the stronger of the two — but it holds over a narrower set of comparisons than the first
+draft of this entry claimed, and the narrowing is recorded rather than quietly dropped.**
+
+**Where it holds: the dataset fixed, the action space varied.** That is D33 against D35. `S_sq` is
+then literally the same number in every arm — the same fitted surfaces are re-solved under different
+bounds — while `S_opt` moves, because D33 records that regret is measured against an optimum a
+governed team could not reach and D35 that regret's denominator shrinks under the guardrail. So
+across action spaces the status-quo-referenced figure is comparable and the optimum-referenced one
+is not. No entry in this log had made that point, and it is the reason the reordering improves the
+write-up rather than merely re-angling it.
+
+**Where it does NOT hold, stated because the first draft cited it as support and it is the
+counterexample.** D36's two arms share an action space and differ in the *spend process*, which
+moves `S_sq` as well — D36:1171 records realised media share falling 0.2500 → 0.2382 at the status
+quo, and D34:1111 gives the mechanism, a fixed budget concentrated into fewer weeks sitting further
+along the saturation curve. Across the flighting arms **neither** absolute figure is comparable, and
+only the rates are. Worse, the newly-mandated leading figure cannot even be produced for the flighted
+arm from committed data: `flighting_check.csv` carries no achievable-lift column, so the per-seed
+change against the status quo is not derivable. The README says all three of these things where the
+flighting table is.
+
+**Three constraints from other entries, each honoured rather than overridden.**
+
+- **D19.2** mandates "absolute lift lost, as a percentage of total sales, reported alongside regret",
+  and absolute lift lost is `regret × achievable lift` — the *optimum* comparator, the 2.73%. Leading
+  with the status-quo figure complies with D19.2 only while 2.73% still appears alongside. It does,
+  everywhere, and that is now a requirement rather than a habit.
+- **D19.3** is the one that needed thinking about, and the honest answer is that **nothing about it
+  is re-pointed** — an earlier draft of this entry claimed it was, and that claim is withdrawn. Its
+  warning reads "**Cross-condition regret comparisons** read as 'share of what was achievable there,'
+  not 'damage done'", so it was always scoped to *regret*, and the status-quo loss is a different
+  quantity that may legitimately be read as damage precisely because its baseline does not move.
+  What D19.3 does leave unresolved is its second sentence: "the absolute figure settles which is
+  meant" had exactly **one** referent when it was written, and this entry introduces a second
+  absolute and leads with it. **The disambiguating role stays with lift lost — the optimum
+  comparator — because that is the quantity commensurate with regret.** That is precisely why every
+  figure must name its comparator in the same sentence: with two absolutes in play, position no
+  longer identifies which one is meant, and only the label does.
+- **D37** requires that the action space be named at every use and that "the unconstrained figure
+  never appears alone". A leading figure inherits that rule, and the guardrailed counterpart of
+  −1.58% did not exist anywhere in this log, the README or the docs before this entry. It is in the
+  table below, and it is **+0.30%** — a gain, not a loss. That is a materially weaker headline
+  pairing than "destroys 1.58%" alone, and the decision to lead with the status-quo comparator is
+  taken in full view of it.
+
+**Both figures, in three action spaces, as signed change in total sales against leaving the budget
+alone** (negative is worse). Recomputed this session from `results/optimiser_bound_check.csv`, which
+carries no loss column — the quantity is derived per seed as `achievable_lift_share × (1 − regret)`
+and the median taken over seeds. The §3 row reproduces D29's second row with the sign flipped and
+the percentiles correspondingly exchanged; the shortfall column is D29's first row unchanged.
+
+| Action space | Change vs doing nothing | p10 | p90 | Shortfall from the optimum | Regret |
+|---|---|---|---|---|---|
+| §3, `m_c ∈ [0, 3.0]`, n=200 | **−1.58%** | −4.99% | +0.42% | 2.73% | 2.355× |
+| D33, `m_c ∈ [0, 1.3]`, n=198 | −0.46% | −2.01% | +0.66% | 1.60% | 1.407× |
+| D35, `m_c ∈ [0.7, 1.3]`, n=200 | **+0.30%** | −0.27% | +0.55% | 0.32% | 0.501× |
+
+A `loss_vs_status_quo_share` metric does exist, but in `results/spend_variation_sweep.csv`, not in
+the bound check; it and D29's table state the same quantity with the opposite sign convention
+(positive = loss). Prose in the write-up avoids the ambiguity by naming the direction in words.
+
+**Two estimators of "the median", differing in the second decimal, recorded so neither looks like
+an error.** Applying the identity to the two published medians gives (1 − 2.355) × 1.160% = −1.57%
+in §3's space and (1 − 0.501) × 0.623% = +0.31% guardrailed. Taking the median of the per-seed
+quantity gives −1.58% and +0.30%. The median of a ratio is not the ratio of medians. **The measured
+medians are what is reported**, because they are the median of the thing being described and
+because the p10/p90 quoted beside them come from the same distribution; the derived figures are
+noted in the README so that a reader who reproduces them from the headline medians does not
+conclude there is a mistake. The gap is under a hundredth of a percentage point and no conclusion
+turns on it.
+
+**Four claims checked while making this change, and corrected before they reached the write-up.**
+Every headline figure in `README.md` was recomputed from the committed CSVs in the same pass; all
+of the gate tables reproduced exactly, and these four did not.
+
+1. **"G3 crosses its threshold for the first time in the study" under flighting — it does not.**
+   G3's median Spearman is 0.900 at `spend_log_sd = 1.00` in D26's sweep, run and logged a day
+   earlier. The defensible form, and the one the README now uses, is that flighting is the only
+   place in this study where **ranking recovers under an intervention a media team would actually
+   choose**; `spend_log_sd = 1.00` is a level of jitter no planner would introduce.
+2. **`docs/WHEN-TO-TRUST-YOUR-MMM.md` called G3 "the only gate that ever passed" — also wrong.**
+   Meridian passes G2 at 0.820 (D24).
+3. **"a factor of about 16 between its 10th and 90th percentile" at `spend_log_sd = 1.00` — it is
+   about 13.** Measured over 30 seeds × 5 channels the p90/p10 spend ratio has mean 13.07 and
+   median 12.98, against a per-channel-seed range of 10.0 to 17.2. **16 is near the top of that
+   range quoted as though it were typical** — the same failure CLAUDE.md names for extrema over
+   noisy tries, appearing here as a maximum rather than a minimum. The companion figure, "40–45% of
+   weeks below half that channel's own average", holds at a mean of 42.4% and is restated as ~42%.
+4. **"an interquartile range of roughly ±100 percentage points" on the signed per-channel bias —
+   overstated by about a factor of two.** The IQR *widths* at C0 are 94.4 (search), 103.2 (video),
+   105.5 (social) and 109.9 (tv) percentage points, so ±100 should have been ±50, or a width of
+   about 100. OOH's is 258.6 and is now stated separately rather than folded into "each".
+
+**Five more, found by an adversarial pass over the rewritten documents before they were shown to
+anyone.**
+
+5. **"G3 crosses its threshold" overstates a statistic that lands exactly on it.** The flighted
+   median Spearman is 0.8000, the interquartile range is [0.700, 0.900], and **104 of 198 seeds** sit
+   at or above 0.80. Spearman on five channels moves in steps of 0.1, so "crosses" implies a
+   precision the metric does not have. The documents now say **reaches**, and carry the count.
+6. **"The budget decision does not move" / "exactly as bad as before" accepted a null from an
+   underpowered comparison.** Paired over the 198 seeds both arms solved, the G5 difference is
+   **+1.0 percentage point, 95% CI [−7.1, +9.1]**, McNemar *p* = 0.90 (34 discordant one way, 32 the
+   other). The data are consistent with flighting raising the beat rate to 29%, and this design could
+   not have detected it. The claim is now **"no measurable improvement"** with the interval printed,
+   which is what the evidence supports.
+7. **OOH's true ROAS of 0.82, and the 1.73–2.30 range for the others, are seed-0 realisations quoted
+   as properties of the generating process.** The 50-seed medians are 0.84 and 1.73–2.32. The
+   load-bearing claim survives — OOH is below break-even in all 50 seeds checked, maximum 0.852 — but
+   the figures are now labelled.
+8. **"7 of 995" cells fail in the bound check — the denominator is 1000.** Five arms × 200 seeds;
+   993 rows survive.
+9. **"Halves achievable lift from 1.160% to 0.623%" is a 46% cut**, not a halving.
+
+None of these nine changes a gate, a conclusion or a pre-registered number. They are recorded because
+most were about to be re-published in a document being reordered for emphasis, and the reordering is
+what caused them to be re-examined. Items 5 and 6 are the two that would have mattered to a referee:
+both were places where a hedge had quietly hardened into a claim.
+
+**`README.md` is reordered in the same pass, and the reordering is a framing choice rather than a
+claim.** D36's result leads the document: a controlled intervention halves estimation error and
+moves the decision by 0.007 on overlapping intervals. Level identification stays in the body as the
+mechanism. Nothing about D31's withdrawal is disturbed — no novelty is claimed for anything, and
+leading with the flighting result asserts nothing about priority. The one hazard this creates is
+that an **exploratory** result now frames a document whose primary results are confirmatory. It is
+mitigated three ways and disclosed rather than finessed: D34 pre-committed both readings before the
+numbers existed, the exploratory part of the README carries its own heading saying none of it is
+pre-registered, and the limitation is stated in the limitations list.
+
+**Two uncorrected residues in the log itself, found by the same sweep and fixed here rather than in
+place.**
+
+1. **D29's own attribution is wrong.** It says "§4, D19 and D27 all quote C0's achievable lift as
+   1.10% of sales." §4 is *Estimator under test* and contains no achievable-lift figure. The entry
+   that does quote 1.10% and is not named is **D23** (line 712). Read D29's list as **D19, D23 and
+   D27**.
+2. **The retired 1.10% survives in six occurrences across four entries plus one live docstring.**
+   D19:577 and its worked example at :588 ("a 40% regret at C0 is 0.44% of sales", which is
+   0.40 × 1.10% and would be 0.46% at 1.16%); D23:712; and **D27 twice**, at :814 and again at :817
+   inside the very sentence this entry reorders — an earlier draft of this list said "four places"
+   and missed the second D27 occurrence. All of those stand as written under this log's own rule,
+   and D27 now carries an in-place pointer. **`src/mmm_recovery/estimator.py:801` is not in the
+   log** — it states "achievable lift, which runs from 1.10% of sales at C0 to 11.18% at C7" in a
+   live docstring with no correction pointer, and it is the only surviving copy of the retired
+   figure outside this file. It is recorded here and left for the same pass that resolves the
+   stale-docstring item below, because both are code changes and this entry is not.
+
+**Three defects found outside the write-up and deliberately not fixed in this pass**, recorded so
+they are not lost. (a) `estimator.py:616` states "G2 coverage on C0 is 32.0%" with no qualifier;
+32.0% is D21's pre-D22 ten-seed figure and the current 200-seed value is 0.417, and
+`tests/test_estimator.py:655` asserts the literal string `"32.0%"`, so **a green test is holding a
+superseded number in place and will fail the moment the docstring is corrected**. (b)
+`meridian_anchor.py` has neither a `main()` nor a `__main__` block, so the command the README
+documents as a 31-minute run imports the module and exits silently. (c) The bound check and the
+flighting check exclude failed solves without writing a `solve_failed` marker, unlike the sweep;
+the README now discloses the affected `n` for every arm, but the harnesses should record it.
