@@ -58,8 +58,7 @@ and under it the advice is worse than doing nothing in **160 of 200** simulated 
 CI 73.9–85.0%). Under a two-sided ±30% planning guardrail — no channel switched off, no channel
 raised by more than a third — it is worse in **48 of 200**, and it *beats* the status quo 76.0% of
 the time. That guardrail check was pre-committed and it did not go this study's way; it is reported
-as it landed (D35, D37).
-What survives it is that 76.0% still fails the pre-registered 90% threshold, on an interval of
+as it landed (D35, D37). What survives it is that 76.0% still fails the pre-registered 90% threshold, on an interval of
 [69.6%, 81.4%] that excludes it. **A governed MMM is far less destructive and still not good
 enough.** The unconstrained figure never appears here without the governed one beside it.
 
@@ -619,11 +618,20 @@ No network calls, no API keys, no data downloads. Every stochastic step takes an
 
 ```bash
 uv sync
-uv run pytest                              # 425 tests: 424 pass, 1 strict xfail
+uv run pytest                              # 434 tests: 433 pass, 1 strict xfail
 uv run python -m mmm_recovery.sweep        # the exploratory sweep, ~1 min
 uv run python -m mmm_recovery.robustness   # bound check + the ±30% guardrail, ~2 min
 uv run python -m mmm_recovery.flighting    # the flighted-spend validity check, ~2 min
 uv run python -m mmm_recovery.plateau      # the identification plateau (D39), ~3 min
+```
+
+The dashboard is one self-contained HTML file with `plotly.js` vendored inline, so it opens from a
+clean checkout with nothing to fetch. Building it twice produces the same bytes, and the suite
+asserts both that and that the committed copy still matches the code:
+
+```bash
+uv sync --extra report
+make report                                # results/dashboard.html, ~5 MiB, ~10 s
 ```
 
 The sweep refuses to write results unless its `spend_log_sd = 0.30` column reproduces D23's published
@@ -649,7 +657,9 @@ is computed from it.
    D1–D39 that records every departure from it with a date and a reason.
 2. [`docs/WHEN-TO-TRUST-YOUR-MMM.md`](docs/WHEN-TO-TRUST-YOUR-MMM.md) — one page, no equations, for a
    marketing reader.
-3. [`results/`](results/) — the raw per-seed output behind the C0 table, the exploratory sweep, the
+3. [`results/dashboard.html`](results/dashboard.html) — the plateau and the three-arm comparison
+   as figures. Self-contained; open it directly.
+4. [`results/`](results/) — the raw per-seed output behind the C0 table, the exploratory sweep, the
    bound check, the flighting check and, since D39, the plateau grid. The **Nelder–Mead diagnostic**
    is the one thing here still without a committed harness: it survives only as numbers in the
    deviations log and in the strict-xfail reason string that `pytest -rx` prints. Given what

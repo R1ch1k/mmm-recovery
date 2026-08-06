@@ -73,10 +73,11 @@ mmm-recovery/
     sweep.py                  D26 spend-variation sweep; owns the gate arithmetic
     robustness.py             D33/D35 optimiser-bound and guardrail checks
     flighting.py              D34 flighted-spend validity check on C0
+    plateau.py                D39 identification-plateau grid; regenerated, does not reproduce
+    report.py                 the dashboard; plotly vendored, byte-deterministic
     conditions.py             NOT BUILT — K1 fired before Step 5
     metrics.py                NOT BUILT — the gates live in sweep.py instead
     experiment.py             NOT BUILT — no degradation grid was ever run
-    report.py                 NOT BUILT — the dashboard is the last outstanding task
   tests/
   results/                    grid.csv, dashboard.html — committed
   docs/
@@ -146,7 +147,9 @@ The anchor was pulled forward to Step 4 because D21 required it before any struc
 `meridian_anchor.py` exists and C0 is done (D24); C3, C6 and C7 are not. The `[meridian]`
 extra is installed — `uv sync --extra meridian`. Budget **186 s per seed**, CPU only.
 
-**Step 8 — `report.py`, `docs/WHEN-TO-TRUST-YOUR-MMM.md`, `README.md`.** In that order.
+**Step 8 — `report.py`, `docs/WHEN-TO-TRUST-YOUR-MMM.md`, `README.md`.** All three exist. The
+dashboard needs the `[report]` extra (`uv sync --extra report`) and `make report` passes it; plotly
+is vendored into the HTML at build time and is never a run-time dependency of the grid.
 
 ---
 
@@ -205,6 +208,17 @@ Deviation — never because it has become inconvenient.
 - **Regret above 100%** silently clipped. Do not clip it. Worse-than-nothing is the most
   interesting outcome in the study.
 - **`except Exception` swallowing real bugs** as condition failures. Let it crash.
+- **A published number whose harness was never committed.** D39 regenerated the plateau sweep and
+  it did not reproduce: 639 of 780 against a published 177, because the original predated D22 and
+  described the superseded six-column control block. It had been quoted as the current mechanism
+  for weeks and nothing failed. The Nelder–Mead diagnostic is still in that state. **Treat any
+  figure with no artefact behind it as unverified**, and prefer regenerating it to citing it.
+- **A chart that renders blank while every structural check passes.** The first dashboard build put
+  the vendored `plotly.js` at the end of `<body>`, after the `Plotly.newPlot` calls it defines.
+  Valid HTML, correct data, four silent `Plotly is not defined` errors, two empty panels. Nothing
+  short of opening it in a browser would have caught it — so open it, every time.
+- **An axis whose units contradict its own label.** The same build divided contributions by 1000
+  and titled the axis £k, so it read 50 where the annotation beside it read £51,989k.
 - **Comparing a computed statistic to a literal threshold with a bare `>=`.** Spearman's ρ on five
   channels is `1 - 6·Σd²/120`, and scipy evaluates that to 0.7999999999999999889 — one unit in the
   last place *below* the double nearest to `0.80`. A median ρ of exactly 0.8 was therefore reported

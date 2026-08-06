@@ -15,6 +15,12 @@ dependencies = [
 # The core grid must run without this. Meridian is the verify-not-trust anchor
 # (PREREGISTRATION.md §4) and drags in TensorFlow; it stays opt-in.
 [project.optional-dependencies]
+# The dashboard only. Plotly is vendored into a single self-contained HTML file
+# (PREREGISTRATION.md's reporting requirement), so it is a build-time dependency of
+# `make report` and never a run-time one for the grid.
+report = [
+    "plotly>=5.24",
+]
 meridian = [
     "google-meridian",
     "tensorflow-probability",
@@ -30,6 +36,7 @@ dev = [
     # with ignore_missing_imports.
     "scipy-stubs>=1.14",
     "pandas-stubs>=3.0.5.260730",
+    "playwright>=1.62.0",
 ]
 
 [build-system]
@@ -70,6 +77,13 @@ files = ["src", "tests"]
 # conclusions run through stays fully checked.
 [[tool.mypy.overrides]]
 module = ["meridian.*"]
+ignore_missing_imports = true
+
+# plotly ships no py.typed marker either. Same reasoning and the same narrow scope: it is
+# reached only by `report.py`, which draws the dashboard and computes nothing the study
+# concludes from.
+[[tool.mypy.overrides]]
+module = ["plotly.*"]
 ignore_missing_imports = true
 
 [tool.coverage.run]
