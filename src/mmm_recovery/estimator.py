@@ -613,7 +613,9 @@ def bootstrap_contributions(
 
     So the interval this produces answers "how much would this estimate move if the noise had
     been drawn differently", not "how much do we know about the contribution". Measured
-    consequence: G2 coverage on C0 is 32.0% against an 80% threshold. That number is not
+    consequence: G2 coverage on C0 is 41.7% against an 80% threshold, at 200 seeds with D22's
+    control block (D23). An earlier version of this docstring quoted 32.0% without a qualifier;
+    that was D21's pre-D22 figure over 10 seeds and it is superseded. That number is not
     evidence of a bootstrap defect — it follows directly from pricing the wrong term, and it
     is what §4's construction guarantees on a non-identified surface.
 
@@ -798,9 +800,12 @@ def allocation_regret(
     CLAUDE.md names silent clipping as a failure mode, and worse-than-nothing is the most
     informative outcome the study can produce.
 
-    D19 travels with this number: the denominator is achievable lift, which runs from 1.10% of
+    D19 travels with this number: the denominator is achievable lift, which runs from 1.16% of
     sales at C0 to 11.18% at C7, so regret is "share of what was achievable there" and not
     "damage done". Absolute lift lost as a share of total sales must be reported alongside it.
+    D19's own text says 1.10% at C0; D29 measured the 200-seed median at 1.16% and retired the
+    1.10%, whose provenance is not recoverable. Per D38 the loss against the status quo leads
+    the write-up and the shortfall from the optimum follows, both with the comparator named.
 
     Raises:
         ValueError: if achievable lift is not positive, which would make the ratio meaningless

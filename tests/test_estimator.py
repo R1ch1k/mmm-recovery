@@ -646,10 +646,17 @@ def test_the_controls_cannot_absorb_latent_demand() -> None:
 def test_the_bootstrap_docstring_names_the_plateau_as_the_dominant_term() -> None:
     """The §4 caveat is not "slightly narrow" — the omitted term is the largest one.
 
-    Pinned as a test because this sentence is what stops G2's 32% coverage being read as a
-    bootstrap defect. It has to survive into `metrics.py` and into the write-up.
+    Pinned as a test because this sentence is what stops G2's coverage being read as a
+    bootstrap defect. It has to survive into the write-up.
+
+    The coverage figure is pinned too, at D23's 200-seed 41.7%. Until D38 this asserted
+    "32.0%" — D21's pre-D22 ten-seed number — so a green test was holding a superseded figure
+    in place and would have failed had anyone corrected the docstring. Any surviving 32.0%
+    must now carry its qualifier.
     """
     doc = " ".join((bootstrap_contributions.__doc__ or "").split())
     assert "dominant" in doc
     assert "plateau" in doc
-    assert "32.0%" in doc
+    assert "41.7%" in doc
+    if "32.0%" in doc:
+        assert "superseded" in doc

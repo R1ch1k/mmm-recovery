@@ -7,15 +7,20 @@ protecting non-negotiable rule 3.
 """
 
 import inspect
+import json
+from pathlib import Path
 
 import numpy as np
 import pytest
 
+from mmm_recovery import meridian_anchor
 from mmm_recovery.dgp import condition_params, simulate
 from mmm_recovery.meridian_anchor import (
     ANCHOR_CONDITIONS,
+    ANCHOR_JSON,
     INTERVAL_LEVEL,
     MERIDIAN_AVAILABLE,
+    N_ANCHOR_SEEDS,
     SamplingSpec,
     fit_anchor,
     to_input_data,
@@ -86,3 +91,42 @@ def test_the_anchor_reports_convergence_rather_than_assuming_it() -> None:
     assert np.all(fit.interval[:, 0] <= fit.interval[:, 1])
     assert np.isfinite(fit.worst_r_hat)
     assert fit.converged == (fit.worst_r_hat <= SamplingSpec().r_hat_ceiling)
+
+
+def test_the_module_is_runnable_as_a_command() -> None:
+    """The README documents `python -m mmm_recovery.meridian_anchor` as a 31-minute run.
+
+    Until D38 the module had neither a `main()` nor a `__main__` block, so that command
+    imported it and exited silently: a documented reproduction step that could not fail
+    loudly. This pins the entry point rather than the science, which the ~31-minute
+    `fit_anchor` path above covers.
+    """
+    source = Path(meridian_anchor.__file__).read_text(encoding="utf-8")
+
+    assert callable(meridian_anchor.main)
+    assert 'if __name__ == "__main__":' in source
+
+    signature = inspect.signature(meridian_anchor.main)
+    assert list(signature.parameters) == ["argv"]
+
+    with pytest.raises(SystemExit) as exit_info:
+        meridian_anchor.main(["--help"])
+    assert exit_info.value.code == 0
+
+
+def test_the_committed_anchor_output_matches_the_writer_that_now_produces_it() -> None:
+    """`results/meridian_c0.json` must be byte-reproducible by the entry point.
+
+    The file was written by an uncommitted harness with platform-default line endings, so it
+    carried CRLF and no trailing newline while every other artefact in `results/` is written
+    with an explicit `\n`. Normalised at D38. This fails if either side drifts again.
+    """
+    # `newline=""` disables translation so CRLF drift is visible; `Path.read_text` only grew
+    # that argument in 3.13 and this project targets 3.12.
+    with ANCHOR_JSON.open(encoding="utf-8", newline="") as handle:
+        committed = handle.read()
+    rows = json.loads(committed)
+
+    assert committed == json.dumps(rows, indent=1) + "\n"
+    assert [row["seed"] for row in rows] == list(range(N_ANCHOR_SEEDS))
+    assert set(rows[0]) == {"seed", "g1", "coverage", "rhat", "converged", "rel", "seconds"}

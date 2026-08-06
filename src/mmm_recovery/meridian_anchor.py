@@ -28,14 +28,19 @@ and moving it is precisely the intervention §4 says to interpret rather than pe
 fails on defaults, that is the result.
 """
 
+import argparse
+import json
+import time
 from dataclasses import dataclass
-from typing import Any
+from pathlib import Path
+from typing import Any, Final
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from mmm_recovery.dgp import SimResult
+from mmm_recovery.dgp import SimResult, condition_params, simulate
+from mmm_recovery.truth import incremental_contribution, response_surface
 
 _INSTALL_HINT = (
     "google-meridian is not installed. It is the optional [meridian] extra, deliberately kept "
@@ -64,6 +69,9 @@ INTERVAL_LEVEL = 0.90
 
 _EPOCH = "2015-01-05"
 """A fixed Monday. Meridian wants dates; the study must not read a clock (CLAUDE.md rule 4)."""
+
+RESULTS_DIR: Final = Path(__file__).resolve().parents[2] / "results"
+ANCHOR_JSON: Final = RESULTS_DIR / "meridian_c0.json"
 
 
 @dataclass(frozen=True)
@@ -197,3 +205,74 @@ def fit_anchor(sim: SimResult, seed: int, sampling: SamplingSpec | None = None) 
         worst_r_hat=worst,
         converged=worst <= spec.r_hat_ceiling,
     )
+
+
+def score_seed(condition: str, seed: int, sampling: SamplingSpec | None = None) -> dict[str, Any]:
+    """One anchor cell: fit Meridian, grade it against the DGP's own interventional truth.
+
+    The truth side is `truth.incremental_contribution`, byte for byte the quantity `RidgeMMM`
+    is graded on, so G1 and G2 mean the same thing in both columns of the write-up's anchor
+    table. Meridian's channels are realigned to the simulation's order by name rather than by
+    position — the package is free to reorder them and a silent transposition here would look
+    like a per-channel bias.
+
+    `seconds` is wall-clock and is the one field in the output that does not reproduce. It is a
+    cost diagnostic, nothing is computed from it, and this module is not part of `make
+    reproduce` (D24: 186 s per seed, CPU only, ~31 minutes for the ten seeds §4 asks for).
+    """
+    sim = simulate(condition_params(condition), seed)
+    truth = incremental_contribution(response_surface(sim))
+
+    started = time.perf_counter()
+    fit = fit_anchor(sim, seed, sampling)
+    elapsed = time.perf_counter() - started
+
+    order = [fit.channel_names.index(name) for name in sim.channel_names]
+    contribution = fit.contribution[order]
+    lower, upper = fit.interval[order, 0], fit.interval[order, 1]
+
+    relative = (contribution - truth) / truth
+    covered = (truth >= lower) & (truth <= upper)
+
+    return {
+        "seed": seed,
+        "g1": float(np.median(np.abs(relative))),
+        "coverage": float(np.mean(covered)),
+        "rhat": fit.worst_r_hat,
+        "converged": fit.converged,
+        "rel": [float(value) for value in relative],
+        "seconds": elapsed,
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run the §4 anchor and write the per-seed JSON.
+
+    Added at D38. This module previously had no entry point at all, so the command `README.md`
+    documented as a 31-minute run imported it and exited silently — a documented reproduction
+    step that could not fail loudly, which is worse than a wrong number.
+    """
+    parser = argparse.ArgumentParser(description="Google Meridian anchor on the §4 conditions.")
+    parser.add_argument("--condition", default="C0", choices=ANCHOR_CONDITIONS)
+    parser.add_argument("--seeds", type=int, default=N_ANCHOR_SEEDS)
+    parser.add_argument("--out", type=Path, default=ANCHOR_JSON)
+    args = parser.parse_args(argv)
+
+    _require_meridian()
+
+    rows = [score_seed(args.condition, seed) for seed in range(args.seeds)]
+
+    converged = [row for row in rows if row["converged"]]
+    print(f"{args.condition}: {len(converged)}/{len(rows)} converged")
+    if converged:
+        print(f"  worst R-hat      {max(row['rhat'] for row in converged):.4f}")
+        print(f"  G1 median        {np.median([row['g1'] for row in converged]):.4f}")
+        print(f"  G2 coverage      {np.mean([row['coverage'] for row in converged]):.4f}")
+
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(json.dumps(rows, indent=1) + "\n", encoding="utf-8", newline="\n")
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover - exercised as a command, not in the suite
+    raise SystemExit(main())
