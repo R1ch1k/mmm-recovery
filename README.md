@@ -162,19 +162,24 @@ Holding four channels at their true values and sweeping only TV's saturation par
 | Implied TV contribution across the near-tied set | — | **£15,138k to £248,075k, a 16.4× spread** |
 | Error of the single best-fitting point | −3.3% | **−42.8%** |
 
-**Read the two columns against each other, because the contrast is the mechanism.** With the correct
-functional form, the correct controls and no noise, the truth is uniquely identified — nothing on the
-grid comes within three orders of magnitude of it, and the runner-up is only 3.3% wrong. Add noise at
-the level §2 specifies — sd 29.32 £k per week, against a true media series whose own standard
-deviation is 16.8 — and the objective goes flat: 639 of 780 transforms are indistinguishable from the
-truth, 116 of them fit it strictly *better*, and the best-fitting point on the entire grid is 42.8%
-wrong. Across the near-tied set the correlation between CV score and absolute error is only +0.416.
+**Read the two columns against each other, because the contrast is the mechanism, and start with the
+noiseless control.** With the correct functional form, the correct controls and no noise, the truth
+is uniquely identified — the best competing grid point scores **2,590× worse**, and the runner-up is
+only **3.3%** wrong. **So the functional form is identifiable in principle, and simply not
+identifiable from this data.** That control is what forecloses the obvious objection, which is that
+a sweep over Hill parameters was always going to look flat.
+
+Now add noise at the level §2 specifies — sd 29.32 £k per week, against a true media series whose own
+standard deviation is 16.8. **116 of the 780 grid points fit the data strictly *better* than the
+truth does, and the best-fitting point on the entire grid is 42.8% wrong.** The objective around them
+has gone flat: 639 of 780 transforms sit within 1% of the truth's score, and across that near-tied
+set the correlation between CV score and absolute error is only +0.416. Zero of 780 in the noiseless
+column is a degenerate band — 1% of a score that is essentially zero — and is reported as such rather
+than as a figure comparable to 639.
 
 So the claim is not "Hill saturation is unidentifiable". It is the sharper and more uncomfortable
-one: **the form is identifiable in principle and is not identifiable from this data**, because noise
-of an entirely ordinary size erases the curvature the level is identified through. Zero of 780 in the
-noiseless column is a degenerate band — 1% of a score that is essentially zero — and is reported as
-such rather than as a figure comparable to 639.
+one: noise of an entirely ordinary size erases the curvature the level is identified through, in a
+world where the analyst has the functional form exactly right.
 
 > **These numbers replace the ones this section carried until D39, and the replacement was
 > pre-committed.** The README previously reported "177 of 780 … £43,938k to £240,522k, a 5.5-fold
@@ -439,7 +444,12 @@ three interventions separate cleanly.
 | C0 baseline | — | 0.540 | 0.200 | [0.150, 0.261] | 200 |
 | Flighted | the **shape** of spend | **0.309** | 0.207 | [0.156, 0.269] | 198 |
 | `spend_log_sd = 1.00` | the **amount** of spend variation | 0.412 | **0.462** | [0.394, 0.532] | 199 |
-| `m_c ∈ [0.7, 1.3]` | the optimiser's **action space** | 0.540, unchanged | **0.760** | [0.696, 0.814] | 200 |
+| `m_c ∈ [0.7, 1.3]` | the optimiser's **action space** | 0.540 *(identical by construction: re-solves the same fitted surfaces)* | **0.760** | [0.696, 0.814] | 200 |
+
+**The last row's G1 is not a fourth measurement.** The guardrail re-solves the **same fitted
+surfaces** with no refit, so its 0.540 is the baseline's own number reappearing — not an estimate
+that happened to land in the same place. The G1 column therefore holds three measurements across
+four rows, and the table is a controlled contrast rather than four independent readings.
 
 **Two interventions moved the decision, and better estimation was not one of them.** More spend
 variation took G5 from 0.200 to 0.462 and bounding the optimiser took it from 0.200 to 0.760; both
@@ -447,11 +457,10 @@ intervals clear the baseline's entirely. Flighting produced the **best contribut
 anywhere in this study** — G1 0.540 → 0.309, a 43% reduction — and moved G5 by 0.007, on intervals
 that almost entirely overlap.
 
-Note what the last row does *not* do. The guardrail re-solves the **same fitted surfaces** with no
-refit, so its G1 is identical to the baseline's by construction. The intervention that improved the
-decision most changed the estimate not at all, and the intervention that improved the estimate most
-changed the decision not at all. **That is *estimable ≠ actionable* as three measured arms rather
-than as an argument.**
+Put the two extremes side by side and the point is as sharp as this study can make it. **The arm
+that moved the decision most changed the estimate by exactly zero. The arm that improved the
+estimate most moved the decision by 0.007, on overlapping intervals.** That is *estimable ≠
+actionable* as measured arms rather than as an argument.
 
 **The honest limit on the middle row, in the same breath.** `spend_log_sd = 1.00` is not a setting
 any team can choose. It is weekly spend spanning a factor of about 13 between its quiet and its heavy
