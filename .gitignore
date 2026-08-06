@@ -32,3 +32,9 @@ Thumbs.db
 # NOTE: results/ is deliberately NOT ignored. grid.csv and dashboard.html are
 # committed artefacts — the study is only reproducible if its outputs are in
 # the history alongside the code that made them.
+
+# Local AI-tooling config. Machine-specific absolute paths; never part of the study.
+.claude/
+.codex/
+.cursor/
+.agents/
