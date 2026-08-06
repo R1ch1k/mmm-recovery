@@ -17,9 +17,14 @@ from mmm_recovery.plateau import BAND, PLATEAU_CSV
 from mmm_recovery.report import (
     DASHBOARD_HTML,
     G5_THRESHOLD,
+    LIGHT,
     TRUE_TV_CONTRIBUTION,
+    TRUTH_CV_NOISELESS,
     TRUTH_CV_NOISY,
+    arms_figure,
+    c0_gates,
     load_arms,
+    plateau_figure,
     render,
 )
 
@@ -68,8 +73,17 @@ def test_plotly_is_defined_before_the_first_figure_script(html: str) -> None:
 
 
 def test_every_figure_is_present_with_a_fixed_id(html: str) -> None:
-    """Four divs: two figures × two colour modes. Fixed ids are what makes the file reproducible."""
-    ids = ["plateau-light", "arms-light", "plateau-dark", "arms-dark"]
+    """Eight divs: two figures × two colour modes × two layouts.
+
+    A plotly subplot grid cannot reflow with CSS, so the phone layout is a separately rendered
+    figure rather than a restyled one. Fixed ids are what makes the file reproducible.
+    """
+    ids = [
+        f"{figure}-{mode}-{width}"
+        for mode in ("light", "dark")
+        for width in ("wide", "narrow")
+        for figure in ("arms", "plateau")
+    ]
     for div_id in ids:
         assert f'id="{div_id}"' in html
     assert CALL_SITE.findall(html) == ids
@@ -133,6 +147,117 @@ def test_the_true_contribution_constant_matches_the_plateau_modules(html: str) -
 
     assert as_written(f"truth, £{TRUE_TV_CONTRIBUTION:,.0f}k") in html
     assert as_written("Implied TV contribution, £k") in html
+
+
+def test_the_noiseless_panel_contains_its_own_subject() -> None:
+    """The defect this panel shipped with: the truth was off the bottom of the axis.
+
+    Its point is that the truth beats the whole grid by 2,590×. Left to autorange, the log axis
+    started at the *best competitor* (0.0518) and the truth (0.00002) was clipped, so the panel
+    read as the noisy one's point cloud a second time and the contrast — the mechanism — was
+    invisible. The floor is asserted here rather than eyeballed, because nothing else fails when
+    a mark falls outside a range.
+    """
+    figure = plateau_figure(LIGHT)
+    noiseless_axis = figure.layout.yaxis2
+
+    assert noiseless_axis.type == "log"
+    low, high = noiseless_axis.range
+    assert 10.0**low < TRUTH_CV_NOISELESS, "the truth must be inside the axis, not clipped"
+
+    with PLATEAU_CSV.open(encoding="utf-8", newline="") as handle:
+        scores = [float(r["cv_rmse"]) for r in csv.DictReader(handle) if r["series"] == "noiseless"]
+    assert 10.0**high > max(scores), "the worst competitor must still be on the axis"
+
+    # And the truth is actually drawn, not merely inside the range.
+    marks = [
+        trace
+        for trace in figure.data
+        if trace.name == "The true parameters" and trace.y == (TRUTH_CV_NOISELESS,)
+    ]
+    assert len(marks) == 1
+
+
+def test_truth_score_is_drawn_on_the_noisy_panel() -> None:
+    """ "116 of 780 fit better than the truth" should be 116 marks below a line, not a caption."""
+    figure = plateau_figure(LIGHT)
+    lines = [
+        shape
+        for shape in figure.layout.shapes
+        if shape.type == "line" and shape.y0 == shape.y1 == TRUTH_CV_NOISY
+    ]
+    assert lines, "truth's own CV score needs a horizontal rule on the noisy panel"
+
+    marks = [
+        trace
+        for trace in figure.data
+        if trace.name == "The true parameters" and trace.y == (TRUTH_CV_NOISY,)
+    ]
+    assert len(marks) == 1
+
+
+def test_the_guardrails_g1_is_the_baselines_and_is_flagged_as_such() -> None:
+    """D37: that arm re-solves the same fitted surfaces. Its G1 is not a fourth measurement.
+
+    `optimiser_bound_check.csv` carries no bias column at all, which is the same fact in the
+    schema — there is nothing to take a median of because nothing was refitted.
+    """
+    arms = {arm.label: arm for arm in load_arms()}
+    guardrail = arms["Guardrail m_c ∈ [0.7, 1.3]"]
+
+    assert guardrail.g1 == arms["C0 baseline"].g1
+    assert guardrail.g1_by_construction
+    assert not arms["Flighted"].g1_by_construction
+
+    # The finding the paired panel exists to show, in one assertion.
+    assert arms["Flighted"].g1 < arms["C0 baseline"].g1
+    assert abs(arms["Flighted"].g5 - arms["C0 baseline"].g5) < 0.01
+    assert guardrail.g5 > arms["C0 baseline"].g5 + 0.4
+
+
+@pytest.mark.parametrize("narrow", [False, True])
+def test_the_arms_figure_uses_one_set_of_row_labels(narrow: bool) -> None:
+    """A categorical axis silently invents a row for every distinct string it is handed.
+
+    The phone layout shortens the row names. When only *some* traces were switched over, the axis
+    got eight categories instead of four, the explicit range clipped to the first four, and the
+    bottom two arms drew nothing at all — no error, no warning, a figure simply missing half its
+    data. Both panels must agree on the label set, and it must have exactly one entry per arm.
+    """
+    arms = load_arms()
+    figure = arms_figure(arms, LIGHT, narrow=narrow)
+
+    used = {value for trace in figure.data for value in trace.y}
+    expected = {(arm.short if narrow else arm.label) for arm in arms}
+
+    assert used == expected
+    assert len(used) == len(arms)
+
+    # Every arm has both a lollipop line and a marker on each of the two panels.
+    for arm in arms:
+        name = arm.short if narrow else arm.label
+        assert sum(list(trace.y).count(name) for trace in figure.data) == 6
+
+
+def test_every_gate_row_carries_its_threshold(html: str) -> None:
+    """ "fail" without "against what" is unreadable to anyone who has not read the README."""
+    gates = c0_gates()
+    assert [gate for gate, _, _, _ in gates] == ["G1", "G2", "G3", "G4", "G5"]
+    for _, _, threshold, _ in gates:
+        assert threshold, "a verdict without a threshold is not a result"
+        assert threshold in html
+    assert "<th>Threshold</th>" in html
+
+
+def test_the_page_states_the_framing_tag_the_readme_states(html: str) -> None:
+    """The h1 and the README's framing tag must not drift apart; they have once already.
+
+    The dashboard shipped an h1 of "attributable ≠ incremental" for a week after the README had
+    reduced the double tag to "estimable ≠ actionable" alone.
+    """
+    assert "<h1>estimable &ne; actionable</h1>" in html
+    assert "estimable &ne; actionable</title>" in html
+    assert "attributable" not in html
 
 
 def test_the_committed_dashboard_matches_the_module_that_writes_it() -> None:

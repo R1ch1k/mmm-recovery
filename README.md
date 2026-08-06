@@ -74,8 +74,7 @@ above, were added *after* C0 failed and are **not** pre-registered; exactly what
 opening to lead with them is set out at the head of that section. Corrections to this study's own
 earlier numbers are recorded where they occur and in the deviations log, not here.
 
-Third in a series on measurement validity — this one *attributable ≠ incremental*, carried one step
-further in as *estimable ≠ actionable* — after [`priced-in`](https://github.com/R1ch1k/priced-in)
+Third in a series on measurement validity, after [`priced-in`](https://github.com/R1ch1k/priced-in)
 (detectable ≠ tradeable) and `marketplace-mispricing` (detectable ≠ actionable).
 
 ---
@@ -715,7 +714,7 @@ No network calls, no API keys, no data downloads. Every stochastic step takes an
 
 ```bash
 uv sync
-uv run pytest                              # 434 tests: 433 pass, 1 strict xfail
+uv run pytest                              # 441 tests: 440 pass, 1 strict xfail
 uv run python -m mmm_recovery.sweep        # the exploratory sweep, ~1 min
 uv run python -m mmm_recovery.robustness   # bound check + the ±30% guardrail, ~2 min
 uv run python -m mmm_recovery.flighting    # the flighted-spend validity check, ~2 min
