@@ -465,9 +465,15 @@ def plateau_figure(palette: Palette, narrow: bool = False) -> go.Figure:
                 arrowsize=1.1,
                 arrowwidth=1.4,
                 arrowcolor=palette.accent,
-                ax=40 if narrow else 76,
+                # Measured at 360px: anchored left of the contribution rule this ran past the
+                # right edge of its own plot area. Shorter line and a smaller offset on narrow.
+                ax=22 if narrow else 76,
                 ay=-44,
-                text=f"<b>the truth</b> — {gap:,.0f}× better than<br>anything else on the grid",
+                text=(
+                    f"<b>the truth</b> — {gap:,.0f}× better<br>than the whole grid"
+                    if narrow
+                    else f"<b>the truth</b> — {gap:,.0f}× better than<br>anything else on the grid"
+                ),
                 xanchor="left",
                 yanchor="bottom",
                 align="left",
@@ -895,13 +901,18 @@ def render() -> str:
 }}
 /* A plotly subplot grid cannot reflow with CSS, so both layouts are rendered and one is
    chosen here. The resize handler at the end of <body> re-sizes whichever becomes visible:
-   a figure plotted while display:none has zero width and would otherwise stay broken. */
+   a figure plotted while display:none has zero width and would otherwise stay broken.
+
+   The switch is at 900px, not at the 720px used for type and padding below. Measured: a
+   two-panel figure in a 768px window gives each panel about 300px, which is *narrower* than
+   the stacked layout gets at the same width. Between 720 and 900 the "desktop" layout was the
+   cramped one. */
 .viz-narrow {{ display: none; }}
-@media (max-width: 720px) {{
+@media (max-width: 900px) {{
   .viz-wide {{ display: none !important; }}
   .viz-light.viz-narrow {{ display: block; }}
 }}
-@media (max-width: 720px) and (prefers-color-scheme: dark) {{
+@media (max-width: 900px) and (prefers-color-scheme: dark) {{
   .viz-light.viz-narrow {{ display: none; }}
   .viz-dark.viz-narrow {{ display: block; }}
 }}
