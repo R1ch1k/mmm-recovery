@@ -60,6 +60,8 @@ abstractions, no plugin architectures, no config framework beyond dataclasses.
 mmm-recovery/
   PREREGISTRATION.md          binding spec, already written
   CLAUDE.md                   this file
+  PRODUCT.md                  the dashboard's surface brief (Impeccable schema); surface mode READ,
+                              the three hard constraints, and detector findings already declined
   README.md                   written LAST, after results exist
   pyproject.toml
   Makefile                    reproduce, test, lint, report
@@ -74,7 +76,10 @@ mmm-recovery/
     robustness.py             D33/D35 optimiser-bound and guardrail checks
     flighting.py              D34 flighted-spend validity check on C0
     plateau.py                D39 identification-plateau grid; regenerated, does not reproduce
-    report.py                 the dashboard; plotly vendored, byte-deterministic
+    report.py                 the dashboard; plotly vendored, byte-deterministic. Emits EIGHT
+                              figure divs: 2 figures × 2 colour modes × 2 layouts (a plotly
+                              subplot grid cannot reflow with CSS, so the phone layout is a
+                              separately rendered figure, switched at 900px)
     conditions.py             NOT BUILT — K1 fired before Step 5
     metrics.py                NOT BUILT — the gates live in sweep.py instead
     experiment.py             NOT BUILT — no degradation grid was ever run
@@ -219,6 +224,24 @@ Deviation — never because it has become inconvenient.
   short of opening it in a browser would have caught it — so open it, every time.
 - **An axis whose units contradict its own label.** The same build divided contributions by 1000
   and titled the axis £k, so it read 50 where the annotation beside it read £51,989k.
+- **A panel that does not contain its own subject.** The noiseless plateau panel exists to show the
+  truth beating the whole grid by 2,590×, and on autorange the log axis started at the *best
+  competitor* (0.0518) so the truth (0.00002) was clipped off the bottom. Both panels then read as
+  the same point cloud twice and the contrast — the mechanism — was invisible. **Nothing fails when
+  a mark falls outside a range**, so the axis floor is asserted in `tests/test_report.py`.
+- **A plotly annotation on a log axis takes its y in log10 units.** Passing the raw score put the
+  "1% band" label four decades above its own line. Shapes (`add_hline`) take data units; annotations
+  do not. The two look identical in the source.
+- **Mixing label strings on one categorical axis.** The phone layout shortens the arm names; when
+  only *some* traces were switched over, the axis silently gained eight categories instead of four,
+  the explicit range clipped to the first four, and the bottom two arms **drew nothing at all** — no
+  error, no warning, half the figure's data absent. Every trace on an axis must use one label set.
+- **A scanner that cannot read the file type returns the same empty result as a clean pass.** The
+  Impeccable detector reports `[]` for `.py`; its extensions are `.astro .eex .ex .heex .html .jsx
+  .md .svelte .tsx .vue`. Since `report.py` carries the page's entire CSS and copy in an f-string,
+  that "clean" scan covered none of it. Render to a scratch HTML file and scan that. Related: on a
+  page with a 5.6 MB inlined bundle, a whole-file scanner attributes the **library's** source to
+  your design — check the reported line against where the page's own `<style>` block starts.
 - **Comparing a computed statistic to a literal threshold with a bare `>=`.** Spearman's ρ on five
   channels is `1 - 6·Σd²/120`, and scipy evaluates that to 0.7999999999999999889 — one unit in the
   last place *below* the double nearest to `0.80`. A median ρ of exactly 0.8 was therefore reported
