@@ -93,11 +93,19 @@ class Palette:
     axis: str
     series: str
     accent: str
+    fail: str
 
     @property
     def deemphasis(self) -> str:
-        """Points the objective cannot distinguish. Chart chrome, deliberately not a hue."""
-        return self.muted
+        """Marks that are deliberately receding: the points the objective cannot distinguish, and
+        the arms whose interval does not clear the baseline's.
+
+        Kept lighter than `muted`, which is the *text* token. WCAG asks 4.5:1 of small text and
+        only 3:1 of a graphical object, so darkening `muted` to fix the card captions pulled this
+        cloud up with it and it started competing with the series colour it exists to sit behind.
+        The two roles are separate tokens for that reason.
+        """
+        return "#898781"
 
 
 LIGHT: Final = Palette(
@@ -105,11 +113,15 @@ LIGHT: Final = Palette(
     surface="#fcfcfb",
     ink="#0b0b0b",
     secondary="#52514e",
-    muted="#898781",
+    # Was #898781, which is 3.50:1 on this surface — below WCAG AA for text, and this token
+    # carries the card captions, the table headers and the footer. #6f6d68 is 5.03:1. The dark
+    # mode's #898781 is 4.85:1 on #1a1a19 and needs no change.
+    muted="#6f6d68",
     grid="#e1e0d9",
     axis="#c3c2b7",
     series="#2a78d6",
     accent="#eb6834",
+    fail="#d03b3b",
 )
 DARK: Final = Palette(
     name="dark",
@@ -121,6 +133,9 @@ DARK: Final = Palette(
     axis="#383835",
     series="#3987e5",
     accent="#d95926",
+    # #d03b3b is only 3.62:1 here, which made the gate table's verdict — the study's own result —
+    # the least legible text on the page. #e05555 is 4.64:1 and stays in the same red family.
+    fail="#e05555",
 )
 
 FONT: Final = 'system-ui, -apple-system, "Segoe UI", sans-serif'
@@ -564,7 +579,7 @@ def arms_figure(arms: list[Arm], palette: Palette, narrow: bool = False) -> go.F
                 x=[0.0, arm.g1],
                 y=[name, name],
                 mode="lines",
-                line={"color": palette.muted, "width": 1.5},
+                line={"color": palette.deemphasis, "width": 1.5},
                 hoverinfo="skip",
                 showlegend=False,
             ),
@@ -579,7 +594,7 @@ def arms_figure(arms: list[Arm], palette: Palette, narrow: bool = False) -> go.F
             marker={
                 "size": 11,
                 "color": [
-                    palette.muted if arm.g1_by_construction else palette.series for arm in arms
+                    palette.deemphasis if arm.g1_by_construction else palette.series for arm in arms
                 ],
                 "symbol": ["circle-open" if arm.g1_by_construction else "circle" for arm in arms],
                 "line": {"width": 2, "color": palette.series},
@@ -634,7 +649,7 @@ def arms_figure(arms: list[Arm], palette: Palette, narrow: bool = False) -> go.F
                 x=[arm.low, arm.high],
                 y=[name, name],
                 mode="lines",
-                line={"color": palette.series if arm.moved else palette.muted, "width": 2},
+                line={"color": palette.series if arm.moved else palette.deemphasis, "width": 2},
                 hoverinfo="skip",
                 showlegend=False,
             ),
@@ -648,7 +663,7 @@ def arms_figure(arms: list[Arm], palette: Palette, narrow: bool = False) -> go.F
             mode="markers+text",
             marker={
                 "size": 11,
-                "color": [palette.series if arm.moved else palette.muted for arm in arms],
+                "color": [palette.series if arm.moved else palette.deemphasis for arm in arms],
                 "line": {"width": 2, "color": palette.surface},
             },
             text=[f"{arm.g5:.3f}" for arm in arms],
@@ -752,15 +767,49 @@ def c0_gates() -> list[tuple[str, str, str, str]]:
     return [(gate, name, threshold, measured[gate]) for gate, name, threshold in GATE_THRESHOLDS]
 
 
+FIGURE_ALT: Final = {
+    "arms": (
+        "Two panels sharing four rows, one row per arm: the C0 baseline, flighted spend, a "
+        "spend-variation sweep, and a planning guardrail. The left panel plots contribution "
+        "error, where lower is better; the right plots the share of runs beating the status "
+        "quo, with 95% intervals, where higher is better. Every arm is on the failing side of "
+        "both thresholds. The arm with the best contribution error has almost the same "
+        "beats-status-quo rate as the baseline, and the arm with much the best rate has the "
+        "baseline's contribution error unchanged."
+    ),
+    "plateau": (
+        "Two scatter panels over the same candidate grid, plotting cross-validation score "
+        "against the TV contribution each transform implies. On the noisy series the points "
+        "form a wide flat band across the whole contribution range, so scores barely separate "
+        "and many sit below the true parameters' own score. On the same grid without noise the "
+        "true parameters sit alone, orders of magnitude below every competitor, on a "
+        "logarithmic axis."
+    ),
+}
+"""Static prose. Deliberately not derived from the CSVs: the counts are already in the cards and
+the gate table as real text, and generating alt text from data would put a second, unasserted
+copy of every headline number on the page — and a build-time string is a determinism surface."""
+
+
 def _figure_html(figure: go.Figure, div_id: str) -> str:
-    """Deterministic: the div id is fixed, so plotly never reaches its uuid generator."""
+    """Deterministic: the div id is fixed, so plotly never reaches its uuid generator.
+
+    The plot is hidden from assistive technology and a static description stands in for it. A
+    plotly figure is thousands of unlabelled SVG nodes; exposing it produces noise, not meaning.
+    """
     html: str = figure.to_html(
         include_plotlyjs=False,
         full_html=False,
         div_id=div_id,
         config={"displayModeBar": False, "responsive": True},
     )
-    return html
+    alt = FIGURE_ALT[div_id.split("-")[0]]
+    return (
+        f'<figure class="plot" role="group" aria-label="Figure">\n'
+        f'  <figcaption class="sr-only">{alt}</figcaption>\n'
+        f'  <div aria-hidden="true">{html}</div>\n'
+        f"</figure>"
+    )
 
 
 def _palette_css(palette: Palette) -> str:
@@ -774,6 +823,7 @@ def _palette_css(palette: Palette) -> str:
             ("grid", palette.grid),
             ("series", palette.series),
             ("accent", palette.accent),
+            ("fail", palette.fail),
         )
     )
 
@@ -809,7 +859,7 @@ def render() -> str:
     )
 
     gate_rows = "\n".join(
-        f"      <tr><th>{gate}</th><td>{name}</td>"
+        f'      <tr><th scope="row">{gate}</th><td>{name}</td>'
         f'<td class="num thr">{threshold}</td>'
         f'<td class="num">{value}</td><td class="fail">fail</td></tr>'
         for gate, name, threshold, value in gates
@@ -889,7 +939,20 @@ th, td {{ text-align: left; padding: 7px 12px 7px 0; border-bottom: 1px solid va
 th {{ color: var(--muted); font-weight: 600; }}
 td.num {{ font-variant-numeric: tabular-nums; color: var(--ink); }}
 td.thr {{ color: var(--muted); }}
-td.fail {{ color: #d03b3b; font-weight: 600; }}
+td.fail {{ color: var(--fail); font-weight: 600; }}
+figure.plot {{ margin: 0; }}
+.sr-only {{
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}}
+@media (prefers-reduced-motion: reduce) {{
+  /* The page animates nothing of its own; this stills plotly's hover and legend transitions,
+     which are the only motion on it. Not a blanket 0.01s kill — there is no state change here
+     that a transition is carrying, so removing them loses nothing. */
+  .js-plotly-plot * {{
+    transition-duration: 0.01ms !important; animation-duration: 0.01ms !important;
+  }}
+}}
 footer {{ color: var(--muted); font-size: 13px; margin-top: 34px; }}
 footer code {{ font-size: 12.5px; }}
 a {{ color: var(--series); }}
@@ -906,6 +969,7 @@ a {{ color: var(--series); }}
 </style>
 </head>
 <body>
+<main>
 <h1>estimable &ne; actionable</h1>
 <p class="sub">A pre-registered test of whether Marketing Mix Modelling produces a budget decision
 worth acting on. Under the cleanest conditions the study could construct, it does not.</p>
@@ -931,14 +995,18 @@ worth acting on. Under the cleanest conditions the study could construct, it doe
   so conditions C1&ndash;C7 were never run and are moot rather than negative.</p>
   <div class="tw">
   <table>
-    <thead><tr><th>Gate</th><th>Metric</th><th>Threshold</th><th>C0, 200 seeds</th>
-      <th>Verdict</th></tr></thead>
+    <caption class="sr-only">The five pre-registered gates on condition C0, with the threshold
+      fixed before any code ran, the measured value over 200 seeds, and the verdict. All five
+      fail.</caption>
+    <thead><tr><th scope="col">Gate</th><th scope="col">Metric</th><th scope="col">Threshold</th>
+      <th scope="col">C0, 200 seeds</th><th scope="col">Verdict</th></tr></thead>
     <tbody>
 {gate_rows}
     </tbody>
   </table>
   </div>
 </section>
+</main>
 
 <footer>
 <p>Every figure is recomputed at build time from <code>results/*.csv</code>; only the

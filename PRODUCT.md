@@ -86,6 +86,18 @@ Two further properties that are cheap to break and expensive to notice:
   the figure blank on a machine without it and unprintable everywhere.
 - **Text is full-width.** No `max-width` measure cap on text containers.
 
+## Detector findings reviewed and declined — do not re-raise
+
+| Finding | Date | Why declined |
+|---|---|---|
+| `overused-font` — "Open Sans" | 2026-08-06 | The match is at line 29 of the output, inside the **vendored plotly bundle**; the page's own CSS starts around line 3900. `report.py` names no such face, and the page measurably *renders* in `system-ui, -apple-system, "Segoe UI"` — body, headings, tiles and plotly's own SVG text. Unactionable without forking plotly, and there is nothing to action. |
+| `layout-transition` — `transition: height` ×2 | 2026-08-06 | Both matches are inside the vendored bundle. `report.py` contains no `transition` at all. |
+| `em-dash-overuse` — "15 in body text" | 2026-08-06 | The rendered page has **9** em-dashes in 3,318 characters, not 15; the static scan double-counts because every figure is emitted twice for light and dark. Six of the nine are title–subtitle separators in chart headings, which is standard typography and carries none of the prose cadence the rule screens for. Fixing because a rule fired, rather than because the thing it detects is present, is the wrong instinct. |
+
+The first two share a cause worth stating once: **this page inlines a 5.6 MB third-party bundle, so
+any whole-file scanner will attribute the library's source to the design.** Check the line number
+against the `<style>` block before believing a finding.
+
 ## The failure mode this surface has actually had
 
 Twice, a structurally perfect page was wrong in a way only a browser showed:

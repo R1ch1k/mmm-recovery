@@ -714,7 +714,7 @@ No network calls, no API keys, no data downloads. Every stochastic step takes an
 
 ```bash
 uv sync
-uv run pytest                              # 441 tests: 440 pass, 1 strict xfail
+uv run pytest                              # 448 tests: 447 pass, 1 strict xfail
 uv run python -m mmm_recovery.sweep        # the exploratory sweep, ~1 min
 uv run python -m mmm_recovery.robustness   # bound check + the ±30% guardrail, ~2 min
 uv run python -m mmm_recovery.flighting    # the flighted-spend validity check, ~2 min

@@ -15,7 +15,9 @@ import pytest
 
 from mmm_recovery.plateau import BAND, PLATEAU_CSV
 from mmm_recovery.report import (
+    DARK,
     DASHBOARD_HTML,
+    FIGURE_ALT,
     G5_THRESHOLD,
     LIGHT,
     TRUE_TV_CONTRIBUTION,
@@ -246,7 +248,7 @@ def test_every_gate_row_carries_its_threshold(html: str) -> None:
     for _, _, threshold, _ in gates:
         assert threshold, "a verdict without a threshold is not a result"
         assert threshold in html
-    assert "<th>Threshold</th>" in html
+    assert ">Threshold</th>" in html
 
 
 def test_the_page_states_the_framing_tag_the_readme_states(html: str) -> None:
@@ -258,6 +260,87 @@ def test_the_page_states_the_framing_tag_the_readme_states(html: str) -> None:
     assert "<h1>estimable &ne; actionable</h1>" in html
     assert "estimable &ne; actionable</title>" in html
     assert "attributable" not in html
+
+
+def _relative_luminance(hex_colour: str) -> float:
+    raw = hex_colour.lstrip("#")
+    channels = [int(raw[i : i + 2], 16) / 255 for i in (0, 2, 4)]
+    linear = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in channels]
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+
+
+def _contrast(a: str, b: str) -> float:
+    high, low = sorted((_relative_luminance(a), _relative_luminance(b)), reverse=True)
+    return (high + 0.05) / (low + 0.05)
+
+
+@pytest.mark.parametrize("palette", [LIGHT, DARK], ids=["light", "dark"])
+def test_every_text_token_clears_wcag_aa_on_its_own_surface(palette: object) -> None:
+    """Measured, not asserted by eye. Both of these shipped below the line.
+
+    `muted` carries the card captions, the table headers, the threshold column and the footer —
+    every caption that says what a headline number *means*. In light mode it was #898781 at
+    3.50:1. `fail` is the gate table's verdict, the study's own result; in dark mode it was
+    #d03b3b at 3.62:1, making the single most load-bearing word the least legible text on the
+    page. Small text needs 4.5:1.
+    """
+    for token in ("ink", "secondary", "muted", "fail"):
+        ratio = _contrast(getattr(palette, token), palette.surface)  # type: ignore[attr-defined]
+        assert ratio >= 4.5, f"{palette.name} --{token} is {ratio:.2f}:1"  # type: ignore[attr-defined]
+
+
+@pytest.mark.parametrize("palette", [LIGHT, DARK], ids=["light", "dark"])
+def test_deemphasis_stays_lighter_than_muted_and_still_clears_the_mark_floor(
+    palette: object,
+) -> None:
+    """The regression that darkening `muted` caused, and why the two roles are separate tokens.
+
+    WCAG asks 4.5:1 of small *text* and only 3:1 of a *graphical object*. Raising `muted` to fix
+    the captions pulled the receding point cloud up with it, and it started competing with the
+    series colour it exists to sit behind. `deemphasis` is the mark token and must stay below
+    `muted` in contrast while clearing 3:1.
+    """
+    surface = palette.surface  # type: ignore[attr-defined]
+    mark = _contrast(palette.deemphasis, surface)  # type: ignore[attr-defined]
+    text = _contrast(palette.muted, surface)  # type: ignore[attr-defined]
+
+    assert mark >= 3.0, f"receding marks are below the graphical-object floor at {mark:.2f}:1"
+    assert mark <= text, "de-emphasised marks must not out-contrast the text token"
+
+
+def test_the_figures_are_reachable_without_seeing_them(html: str) -> None:
+    """A plotly figure is thousands of unlabelled SVG nodes; exposing it produces noise.
+
+    Each plot is hidden from assistive technology and a static description stands in for it.
+    """
+    assert html.count('<figcaption class="sr-only">') == 8
+    assert html.count('<div aria-hidden="true">') == 8
+    for alt in FIGURE_ALT.values():
+        assert alt in html
+
+
+def test_figure_descriptions_restate_no_measured_quantity() -> None:
+    """Static prose, structurally enforced.
+
+    Generating alt text from the CSVs would put a second, unasserted copy of every headline
+    number on the page, free to drift from the cards that already state them — and a build-time
+    string is a determinism surface. Structural constants ("C0", "95% intervals") are fine; a
+    *measured* count is not, so the check bans the specific figures the CSVs produce rather than
+    banning digits outright.
+    """
+    measured = {"639", "780", "116", "160", "200", "48", "2,590", "2590", "16.4", "0.540", "0.309"}
+    for name, alt in FIGURE_ALT.items():
+        found = sorted(value for value in measured if value in alt)
+        assert not found, f"{name} restates {found}; the cards already carry those"
+
+
+def test_the_document_has_the_landmarks_and_table_semantics(html: str) -> None:
+    """Low severity individually; together they are whether the page is navigable at all."""
+    assert "<main>" in html and "</main>" in html
+    assert html.count('<th scope="col">') == 5
+    assert html.count('<th scope="row">') == 5
+    assert "<caption" in html
+    assert "prefers-reduced-motion" in html
 
 
 def test_the_committed_dashboard_matches_the_module_that_writes_it() -> None:
