@@ -11,8 +11,12 @@ A pre-registered measurement-validity audit of Marketing Mix Modelling. We simul
 world where the true causal effect of each marketing channel is known, fit MMM to what a
 real analyst would see, and measure whether the resulting **budget decision** is any good.
 
-Headline framing: **attributable ≠ incremental**. Third in a series with `priced-in`
+Headline framing: **estimable ≠ actionable**. Third in a series with `priced-in`
 (detectable ≠ tradeable) and `marketplace-mispricing` (detectable ≠ actionable).
+The earlier tag *attributable ≠ incremental* was reduced out on 2026-08-06; it survives
+only in `PREREGISTRATION.md:1202` (a dated deviation entry, never edited in place) and in
+the practitioner one-pager, where it is the substance of an instruction rather than a
+headline — see the note in `docs/WHEN-TO-TRUST-YOUR-MMM.md`.
 
 ---
 

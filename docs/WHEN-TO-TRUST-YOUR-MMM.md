@@ -159,6 +159,12 @@ fix is a deliberate high-low spending pattern run for a period or two, not more 
   it only just reached the bar. Rough ordering is a defensible way to pick the next experiment. It
   is not a basis for sizing a reallocation, which is the thing that failed.
 - **Do not use it for large reallocations.** That is precisely the use that failed.
+<!-- Deliberate, and not a stale framing tag. "attributable is not the same as incremental" is
+     the field's own distinction between credit assigned from observed data and what the
+     spending actually caused, and it is the substance of this instruction rather than a
+     headline. The repository's headline framing is `estimable ≠ actionable`, which is this
+     study's finding about its own arms. Both are correct and they are not competing names for
+     the same thing. Do not "align" this line with the dashboard's h1. -->
 - **Treat "incremental" claims as attribution unless an experiment says otherwise.** That is the
   point of the whole exercise: attributable is not the same as incremental.
 - **Move in small steps and measure.** A modest reallocation you can actually verify beats an

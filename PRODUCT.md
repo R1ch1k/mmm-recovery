@@ -160,10 +160,13 @@ in-browser after every palette change.
 | `overused-font` — "Open Sans" | 2026-08-06 | The match is at line 29 of the output, inside the **vendored plotly bundle**; the page's own CSS starts around line 3900. `report.py` names no such face, and the page measurably *renders* in `system-ui, -apple-system, "Segoe UI"` — body, headings, tiles and plotly's own SVG text. |
 | `layout-transition` — `transition: height` ×2 | 2026-08-06 | Both matches are inside the vendored bundle. `report.py` contains no `transition` at all. |
 | `em-dash-overuse` — "15 in body text" | 2026-08-06 | The rendered page has **9** in 3,318 characters, not 15; the static scan double-counts because every figure is emitted twice for light and dark. Six of the nine are title–subtitle separators in chart headings, which is standard typography and carries none of the prose cadence the rule screens for. Fixing because a rule fired, rather than because the thing it detects is present, is the wrong instinct. |
+| `line-length-too-long` — "~266 chars/line, aim for <80" | 2026-08-08 | Raised by the **Chrome extension** against the rendered page, on the sub-headline, all four section ledes and both footnotes. Declined on a standing project rule, not on this page's merits: text is full-width here, and no `max-width` measure cap goes on a text container. The count is real — the body is `padding: 40px 32px` with no measure — and it is the intended consequence. See the settled entry above. |
+| `layout-transition` — `transition: height` (re-raised) | 2026-08-08 | Same false positive as the 2026-08-06 row, now from the extension rather than the static scan. Re-verified: the only two matches in the built page are at lines **2727 and 3236**, inside the vendored bundle, and are not even CSS — they are mapbox style-spec JSON, `transition:!0,requires:["fill-extrusion-height"]`. The page's own `<style>` block is lines 3892–4002 and contains no `transition` property at all. |
 
-The first two share a cause worth stating once: **this page inlines a 5.6 MB third-party bundle, so
-any whole-file scanner will attribute the library's source to the design.** Check the line number
-against the `<style>` block before believing a finding.
+The bundle findings share a cause worth stating once: **this page inlines a 5.6 MB third-party
+bundle, so any whole-file scanner will attribute the library's source to the design.** Check the
+line number against the `<style>` block before believing a finding. **The extension is not exempt
+from this** — its first run re-raised the same bundle match the static detector did.
 
 ## The failure mode this surface has actually had
 

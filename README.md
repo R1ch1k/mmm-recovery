@@ -21,19 +21,19 @@ reappearing rather than a fourth measurement — which makes the table a control
 than four independent readings.
 
 Flighting is the arm that carries the framing. Running TV, video and out-of-home in two-to-six-week
-bursts with dark weeks between — the way brand media is actually bought — produced the **best
+bursts with dark weeks between, the way brand media is actually bought, produced the **best
 contribution estimates anywhere in this study**: median absolute relative error falls from 0.540 to
 0.309, five and a half times as many runs land inside the pre-registered 20%, and channel ranking
 reaches its threshold for the only time under something a media team would choose to do. The budget
-recommendation showed **no measurable improvement** — 20.7% against 20.0% over each arm's own solved
+recommendation showed **no measurable improvement**: 20.7% against 20.0% over each arm's own solved
 runs, and 20.7% against **19.7%** once the baseline is restricted to the 198 seeds both arms solved.
 The second is the comparison the paired test uses, which is why the table's 0.007 and the paired
 **+1.0 percentage point** are not the same subtraction. That paired difference carries a 95% CI of
-[−7.1, +9.1] and McNemar *p* = 0.90 — a null from a design that could not have detected a change
+[−7.1, +9.1] and McNemar *p* = 0.90, a null from a design that could not have detected a change
 smaller than about eight points, and it is reported as that rather than as a demonstration of no
 effect. Two counterweights belong in the same breath: interval coverage gets *worse*
-(G2 0.417 → 0.323), and G3 **reaches** 0.800 rather than clearing it — 104 of 198 seeds at or above
-0.80, on a statistic moving in steps of 0.1 across five channels.
+(G2 0.417 → 0.323), and G3 **reaches** 0.800 rather than clearing it. That is 104 of 198 seeds at or
+above 0.80, on a statistic moving in steps of 0.1 across five channels.
 
 **Under flighting you can learn which channels are better without learning how much better, and
 better ranking did not buy a better budget: estimable ≠ actionable.** What this does **not**
@@ -44,7 +44,7 @@ reconciliation is set out in full where the sweep is, not buried.
 **The identification failure underneath it is not new, and nothing in this repository claims to be
 first.** Dew, Padilla and Shchetkina (2024), *Your MMM is Broken*, established that nonlinear and
 time-varying specifications are frequently not separately identifiable, that cross-validation cannot
-tell them apart, and — the sentence this whole project is a footnote to — that "just because two
+tell them apart, and, in the sentence this whole project is a footnote to, that "just because two
 models give equivalent predictions under status quo spending patterns does not imply that they will
 give the same predictions under intervention" (p. 20). They cite Jin et al. (2017) for the Hill
 function being "poorly identified, with different combinations of the parameters yielding
@@ -60,8 +60,8 @@ shipping Meridian** on default priors.
 **Every figure in this document names its action space, because the difference between them is
 large.** The pre-registered optimiser (§3) may take any channel to zero or to 3× its current spend,
 and under it the advice is worse than doing nothing in **160 of 200** simulated worlds (80.0%, 95%
-CI 73.9–85.0%). Under a two-sided ±30% planning guardrail — no channel switched off, no channel
-raised by more than a third — it is worse in **48 of 200**, and it *beats* the status quo 76.0% of
+CI 73.9–85.0%). Under a two-sided ±30% planning guardrail, with no channel switched off and no
+channel raised by more than a third, it is worse in **48 of 200**, and it *beats* the status quo 76.0% of
 the time. That guardrail check was pre-committed and it did not go this study's way; it is reported
 as it landed (D35, D37). What survives it is that 76.0% still fails the pre-registered 90% threshold, on an interval of
 [69.6%, 81.4%] that excludes it. **A governed MMM is far less destructive and still not good
@@ -181,12 +181,12 @@ only **3.3%** wrong. **So the functional form is identifiable in principle, and 
 identifiable from this data.** That control is what forecloses the obvious objection, which is that
 a sweep over Hill parameters was always going to look flat.
 
-Now add noise at the level §2 specifies — sd 29.32 £k per week, against a true media series whose own
+Now add noise at the level §2 specifies: sd 29.32 £k per week, against a true media series whose own
 standard deviation is 16.8. **116 of the 780 grid points fit the data strictly *better* than the
 truth does, and the best-fitting point on the entire grid is 42.8% wrong.** The objective around them
 has gone flat: 639 of 780 transforms sit within 1% of the truth's score, and across that near-tied
 set the correlation between CV score and absolute error is only +0.416. Zero of 780 in the noiseless
-column is a degenerate band — 1% of a score that is essentially zero — and is reported as such rather
+column is a degenerate band, 1% of a score that is essentially zero, and is reported as such rather
 than as a figure comparable to 639.
 
 So the claim is not "Hill saturation is unidentifiable". It is the sharper and more uncomfortable
@@ -212,28 +212,29 @@ Three findings rule out the comfortable explanations:
   (median regret 2.386× → 2.406× → 2.417× at 8, 16 and 32 starts). The objective is being optimised
   correctly. The objective is the problem.
 - **It is not a misspecified control block.** §4's original control list could not represent §2's
-  own baseline — a structured residual of 2.45 £k per week. Adding the four missing
+  own baseline: a structured residual of 2.45 £k per week. Adding the four missing
   `trend × Fourier` columns drops the projection residual to 1.4 × 10⁻¹³ and makes contribution
   recovery exact at the true hyperparameters. It moved median relative bias from 0.641 to 0.640.
   The last implementation-level explanation was fixed, and the gates still fail (D22).
 - **It is not the optimiser extrapolating upward.** At §3's bound of `m_c ≤ 3.0` the model's
-  recommendation puts on average **0.035 of 5 channels** at that bound — 7 of 1000 channel-slots —
+  recommendation puts on average **0.035 of 5 channels** at that bound, or 7 of 1000 channel-slots,
   so there is essentially nothing at 3× spend for the regret to be an artefact of. Capping every
   channel at 130% of current spend, as Dew et al. do explicitly to avoid extrapolation (p. 26;
   p. 29 fn. 13), leaves the advice still worse than doing nothing at the median (regret 1.407×,
   beats status quo 30.3% [24.3, 37.0]).
   **The bound that does bind is the lower one**, and it is reported here because an earlier version
   of this section wrongly called these solutions interior on the strength of an upper-bound count
-  alone. The model zeroes **1.24 of 5 channels** on average. So does the truth — it zeroes exactly
+  alone. The model zeroes **1.24 of 5 channels** on average. So does the truth: it zeroes exactly
   **1.00** in all 200 seeds, and that one is OOH, the only channel whose true ROAS is below
-  break-even — 0.82 at seed 0, with a 50-seed median of 0.84 and a maximum of 0.85. (The committed CSV records the count, not the identity; that it is always OOH
-  follows from the ROAS ordering, per D20.) Defunding a channel is therefore not the error;
+  break-even: 0.82 at seed 0, with a 50-seed median of 0.84 and a maximum of 0.85. (The committed
+  CSV records the count, not the identity; that it is always OOH follows from the ROAS ordering,
+  per D20.) Defunding a channel is therefore not the error;
   defunding more channels than the truth does is. See D33.
 
 ## Google's Meridian agrees on the estimation failure and disagrees on the intervals
 
-Run exactly as §4 specifies — C0, 10 seeds, default priors, no tuning, 4 chains — all ten seeds
-converged with a worst R-hat of 1.008 against a 1.2 ceiling. Raw output is
+Run exactly as §4 specifies, on C0 with 10 seeds, default priors, no tuning and 4 chains: all ten
+seeds converged with a worst R-hat of 1.008 against a 1.2 ceiling. Raw output is
 `results/meridian_c0.json`.
 
 | Gate | RidgeMMM (200 seeds) | Meridian (10 seeds) | Threshold |
@@ -241,8 +242,8 @@ converged with a worst R-hat of 1.008 against a 1.2 ceiling. Raw output is
 | G1 median \|relative bias\| | 0.540 fail | **0.456 fail** | < 0.20 |
 | G2 coverage | 0.417 fail | **0.820 pass** | ≥ 0.80 |
 
-Two estimators sharing no code, no optimiser and no inference paradigm — penalised least squares
-with a random search, against Hamiltonian Monte Carlo with ROI priors — land eight percentage points
+Two estimators sharing no code, no optimiser and no inference paradigm, penalised least squares
+with a random search against Hamiltonian Monte Carlo with ROI priors, land eight percentage points
 apart on G1 and both roughly 2.5× outside it. Meridian's median per-channel bias is +49.7% on TV,
 +107.1% on OOH and −29.5% on search; at seed 0 it puts media at **41.9% of sales against a true
 25.0%**. That last figure is the one number in this section not recoverable from
@@ -271,7 +272,7 @@ badly wrong point estimate — honest uncertainty, not accuracy.
 
 **Nothing in this part of the document is pre-registered.** All three checks were added *after* C0
 failed. They set no gate, revise no §8 prediction, and are reported separately for that reason (D26,
-D34, D35). Two of the three — flighting and the guardrail — had their readings written into the
+D34, D35). Two of the three, flighting and the guardrail, had their readings written into the
 deviations log and committed before the numbers existed, which is what licenses the opening section
 of this README to lead with one of them; that is a stronger warrant than ordinary post-hoc analysis,
 and it is still not pre-registration.
@@ -303,10 +304,10 @@ C0 itself and serves as a control that must reproduce the confirmatory table exa
 | Share of runs worse than doing nothing | 0.905 | **0.800** | 0.670 | 0.538 | — |
 
 **The answer is that no realistic amount of observational variation is enough.** At
-`spend_log_sd = 1.00` — a single channel's weekly spend spanning a factor of about **13** between
-its 10th and 90th percentile, with about 42% of weeks below half that channel's own average — only
-the *ranking* of channels recovers. The advice is still worse than doing nothing in 53.8% of runs (95%
-CI 46.8–60.6%), and it still loses money against the status quo at the median.
+`spend_log_sd = 1.00`, a single channel's weekly spend spanning a factor of about **13** between
+its 10th and 90th percentile, with about 42% of weeks below half that channel's own average, only
+the *ranking* of channels recovers. The advice is still worse than doing nothing in 53.8% of runs
+(95% CI 46.8–60.6%), and it still loses money against the status quo at the median.
 
 Note precisely what that level is and is not. It is far more week-to-week *jitter* than any planner
 would deliberately introduce. It is **not** more total variation than a flighted plan, which goes
@@ -316,23 +317,23 @@ channels, and real portfolios are not homogeneous — always-on search and socia
 this, flighted TV and OOH rougher. The sweep brackets an average; it does not represent a mix.
 
 That converges on Dew et al.'s conclusion by failing rather than by agreeing with it. Their remedy
-is a deliberate **spending policy** — their "seesaw" and "maximal separation" tests, alternating high
-and low spend for one to two periods (§7) — not the hope that observed variation will suffice. Their
+is a deliberate **spending policy**: their "seesaw" and "maximal separation" tests, alternating high
+and low spend for one to two periods (§7), not the hope that observed variation will suffice. Their
 own sweep over spend variance leaves conflation rates unmoved (Table 2, p. 19). This sweep is the
 observational counterpart and it points the same way: **if you want an MMM you can act on, you have
 to run an experiment, not collect more history.** See D32 for why "converges" had to be stated this
 carefully.
 
 One caveat carried from their p. 33: carryover blunts this. Adstock decays of 0.10–0.70 mean the
-estimator sees less week-to-week swing than is injected — most of all on TV, at 0.70 — so a
+estimator sees less week-to-week swing than is injected, most of all on TV at 0.70, so a
 recommendation phrased in raw spend variation will not transfer unchanged to a team with heavy TV
 adstock.
 
 Two qualifications a practitioner will raise immediately, and both are fair. This is **not new
 advice**: calibrating MMM to lift tests is standard practice and is why Meridian exposes ROI
-calibration at all. What this adds is a measurement of what happens when you do not — a
+calibration at all. What this adds is a measurement of what happens when you do not: a
 measurement, not a priority claim; see the claims section below. And
-experiments are **unevenly available** — geo holdouts are routine for search and social, and
+experiments are **unevenly available**, since geo holdouts are routine for search and social, and
 expensive, slow and noisy for TV and OOH. The cheaper version of the same remedy is a deliberate
 flighting pattern, which many brands already run on precisely the channels that are hardest to test.
 
@@ -347,8 +348,8 @@ the question was whether C0's spend process was unrepresentatively hard.
 TV, video and OOH were flighted in independent 2–6 week bursts at a 50% duty cycle, with each
 channel's total budget preserved; search and social stayed always-on. 200 seeds per arm, with the
 baseline arm reproducing D23 exactly. Two flighted cells failed SLSQP and their rows are blank
-throughout, so **every** flighted figure below — estimation as well as decision — is over 198 seeds,
-not 200. Three rows — G2 coverage, achievable lift and realised media share — are computed and
+throughout, so **every** flighted figure below, estimation as well as decision, is over 198 seeds,
+not 200. Three rows (G2 coverage, achievable lift and realised media share) are computed and
 printed by the module but **not** persisted to `results/flighting_check.csv`, which carries only
 bias, Spearman, regret and beats-status-quo. Those three are reproducible by re-running the check,
 not by reading the committed file.
@@ -386,14 +387,14 @@ better-estimated model and a recommendation this design cannot show to be any be
 story.** At `spend_log_sd = 1.00` the *ranking* is better than under flighting (G3 0.900 against
 0.800) and the *sizing* is worse (G1 0.412 against 0.309), and yet the decision there is markedly
 better: G5 0.462 against 0.207, worse-than-nothing 0.538 against 0.793. So "the decision fails
-because the sizing fails" is **not** a mechanism this study has established — decision quality does
+because the sizing fails" is **not** a mechanism this study has established; decision quality does
 not track either gate monotonically across arms. What is established is narrower and is what the
 opening claims: under flighting specifically, ranking became reliable and the beat-the-status-quo
 rate did not measurably move. Anyone wanting the mechanism would have to run the decomposition
-directly — true ranking with estimated magnitudes, and the converse — and this study does not.
+directly: true ranking with estimated magnitudes, and the converse. This study does not.
 
 One more caveat on comparing the arms in absolute terms. Flighting changes the spend process, so the
-status-quo world itself differs between the arms — realised media share falls 0.2500 → 0.2382 — and
+status-quo world itself differs between the arms; realised media share falls 0.2500 → 0.2382, and
 the flighted arm's achievable lift is not persisted per seed. **Only the rates carry across the two
 arms; neither absolute loss figure does.**
 
@@ -405,8 +406,8 @@ G3 and G5 carry across.
 ## Does a governed action space rescue it? Substantially, and not enough
 
 §3 let the optimiser take any channel to zero or to 3× spend. Real teams operate under planning
-rules. Adding a two-sided ±30% guardrail — no channel cut or raised by more than 30% — on both the
-truth solve and the recommendation, using the same fitted surfaces and no refit:
+rules. Adding a two-sided ±30% guardrail, with no channel cut or raised by more than 30%, on both
+the truth solve and the recommendation, using the same fitted surfaces and no refit:
 
 | m_c range | G4 median regret | G5 beats status quo | 95% CI | Achievable lift | Worse than nothing | n |
 |---|---|---|---|---|---|---|
@@ -423,13 +424,12 @@ note at the end of this section.
 
 **This one did not go the study's way and the pre-commitment is honoured rather than
 reinterpreted.** D35 committed to "if the advice still loses to the status quo more often than not
-under a rule that forbids the destructive move, the objection is closed." It does not — guardrailed,
+under a rule that forbids the destructive move, the objection is closed." It does not: guardrailed,
 it *wins* 76% of the time, and at the median it gains **0.30% of total sales against leaving the
-budget alone** rather than losing 1.58% — while still falling **0.32% of total sales short of the
+budget alone** rather than losing 1.58%, while still falling **0.32% of total sales short of the
 best allocation reachable inside the guardrail**. The objection is **sustained in part**. What
-survives is that
-G5 of 0.760 still fails the 0.90 threshold with an interval excluding it, and G4 still fails 0.20× by
-two and a half times.
+survives is that G5 of 0.760 still fails the 0.90 threshold with an interval excluding it, and G4
+still fails 0.20× by two and a half times.
 
 The mechanism is the interesting part. The guardrail helps so much because it removes the decision
 carrying most of C0's headroom — the true optimum defunds OOH entirely (D20), and forbidding that
@@ -455,8 +455,8 @@ recomputing from the raw file at face value would get 25.0%.
 
 ## Three arms side by side: what actually moved the decision
 
-Each section above changes one thing at a time. Laid alongside each other and read on **G5** — the
-rate D35 fixed in advance as the quantity that is comparable across arms, where regret is not — the
+Each section above changes one thing at a time. Laid alongside each other and read on **G5** (the
+rate D35 fixed in advance as the quantity that is comparable across arms, where regret is not), the
 three interventions separate cleanly.
 
 | Arm | What was changed | G1 | G5 beats status quo | 95% CI | n |
@@ -474,7 +474,7 @@ four rows, and the table is a controlled contrast rather than four independent r
 **Two interventions moved the decision, and better estimation was not one of them.** More spend
 variation took G5 from 0.200 to 0.462 and bounding the optimiser took it from 0.200 to 0.760; both
 intervals clear the baseline's entirely. Flighting produced the **best contribution estimates
-anywhere in this study** — G1 0.540 → 0.309, a 43% reduction — and moved G5 by 0.007, on intervals
+anywhere in this study**, G1 0.540 → 0.309 for a 43% reduction, and moved G5 by 0.007, on intervals
 that almost entirely overlap.
 
 Put the two extremes side by side and the point is as sharp as this study can make it. **The arm
@@ -484,12 +484,12 @@ actionable* as measured arms rather than as an argument.
 
 **The honest limit on the middle row, in the same breath.** `spend_log_sd = 1.00` is not a setting
 any team can choose. It is weekly spend spanning a factor of about 13 between its quiet and its heavy
-weeks, with about 42% of weeks below half the channel's own average — an implausibly large
-*observational* spend distribution, well beyond anything a planner produces — and even there the
+weeks, with about 42% of weeks below half the channel's own average. That is an implausibly large
+*observational* spend distribution, well beyond anything a planner produces, and even there the
 advice is still worse than doing nothing in 53.8% of runs and G5 fails its threshold by a wide
 margin. So that row demonstrates **that variation is what identifies**. It is not a recommendation.
-The actionable form of the same finding is D32's: the remedy is deliberate intervention — an
-experiment, a geo holdout, a seesaw — not waiting for passive variation to accumulate. Dew et al.'s
+The actionable form of the same finding is D32's: the remedy is deliberate intervention, whether an
+experiment, a geo holdout or a seesaw, not waiting for passive variation to accumulate. Dew et al.'s
 own sweep over observational spend variance moved nothing (Table 2, p. 19); this one moves the
 decision only at a level of jitter nobody would introduce on purpose, which is an argument for their
 experimental route rather than an alternative to it.
@@ -510,8 +510,8 @@ configuration, and no configuration passes when re-run properly (D23).
 
 **So this is not the study that was designed.** It is a pre-registered stress test that never reached
 its stress conditions, because under ten years of clean weekly data the specified model could not
-identify how much of sales the media caused. C1 through C7 — collinearity, short samples, confounded
-demand, misspecification, placebo channels — are **moot rather than negative**. Nothing in this
+identify how much of sales the media caused. C1 through C7 (collinearity, short samples, confounded
+demand, misspecification, placebo channels) are **moot rather than negative**. Nothing in this
 repository reports them, and no one should infer them. K1 says "no exceptions, no partial
 publication", and running them under an exploratory label would be exactly the exception it forbids.
 
@@ -565,20 +565,20 @@ fixed. Their 38% and their "noisy arm beat a frozen-budget baseline 62% of the t
 statistic seen from two sides, not two findings; the precise arm's counterparts are 18% and 82%.
 
 **Their rate is not comparable to this study's headline 20%, and the reason is the action space.**
-Haus's simulated decisions are capped by a reallocation limit — 20% per readout in the scenarios the
-article names — and the 38% is pooled across three such caps. The nearest comparator here is
+Haus's simulated decisions are capped by a reallocation limit, 20% per readout in the scenarios the
+article names, and the 38% is pooled across three such caps. The nearest comparator here is
 therefore the **governed** arm, not the unconstrained one: under a ±30% band this study's model beats
 the status quo 76.0% of the time against Haus's noisy 62%, while under §3's unbounded space it does
 so 20.0% of the time. Setting 20% against 62% would put an optimiser free to zero a channel beside
 one capped at a fifth, which is the comparison this document refuses to make everywhere else. Even
-the governed pairing is loose — their cap is per readout and compounds over a year of decisions,
-this study's is a single band around the status quo — so it is offered as the right order of
+the governed pairing is loose: their cap is per readout and compounds over a year of decisions,
+where this study's is a single band around the status quo. It is offered as the right order of
 magnitude, not as a like-for-like contest.
 
 Haus differs in a further way that is the point rather than an excuse: **they fit no model.**
-Measurement there is truth plus stipulated noise — no adstock, no saturation, no confounded demand,
-no design matrix — and the article is explicit that it models random noise only, not systematic bias
-or unrepresentative market selection. Their quantity is the cost of *noise* in an unbiased readout,
+Measurement there is truth plus stipulated noise, with no adstock, no saturation, no confounded
+demand and no design matrix, and the article is explicit that it models random noise only, not
+systematic bias or unrepresentative market selection. Their quantity is the cost of *noise* in an unbiased readout,
 which more data removes. This study's is the cost of *non-identification* in a correctly specified
 estimator, which more data does not remove. On its own terms their 38% is a floor.
 
@@ -600,14 +600,14 @@ larger than the difference.** *Auditing Marketing Budget Allocation with Hindsig
 constrained optimiser over those fitted curves for a benchmark trajectory, and propagates outcome
 noise and response-surface uncertainty through Monte Carlo to report a regret distribution, an
 expected lift and a probability of improvement. **The guardrail as an object of study is theirs, and
-they published first.** The stability bound δ is their headline sweep — ±20%, ±30%, ±40%, ±50% and
-unconstrained (§5.2, Table 2, Figure 3) — chosen by an explicit selection rule (§4.1, eq. 9), with
+they published first.** The stability bound δ is their headline sweep of ±20%, ±30%, ±40%, ±50% and
+unconstrained (§5.2, Table 2, Figure 3), chosen by an explicit selection rule (§4.1, eq. 9), with
 "what is the effect of operational stability constraints?" as a stated research question. So is the
 mechanism this repository records at D37: their §4.3 states that "the distinction between oracle
 variants arises solely from differences in the feasible set", which is the same fact as *the
 guardrail moves the decision a great deal and leaves the contribution estimates exactly where they
-were*. They sweep ±30% specifically, and their finding — moderate reallocations capture most of the
-measurable gain while larger shifts move into weak-support regions — is this study's 80% → 24%
+were*. They sweep ±30% specifically, and their finding, that moderate reallocations capture most of
+the measurable gain while larger shifts move into weak-support regions, is this study's 80% → 24%
 seen through a different instrument.
 
 **The real difference is the reference point, and it is not that they leave the guardrail
@@ -621,12 +621,12 @@ against model counterfactual. The consequence is specific and worth stating prec
 maximises the plug-in mean `μ̂` and Step III scores a perturbed draw from the same posterior, so
 **inside the realised spend range** systematic misspecification is exploited by the optimiser and
 re-emerges as recoverable opportunity cost rather than as error. Outside it they do penalise the
-optimiser — eq. (15)'s support-aware variance inflation and a boundary-anchored isotonic projection,
-which is why §4.3.3 notes that uncertainty-aware regret can *fall* as δ widens — but the penalty
-arrives as dispersion and lost detectability, never as a signed error. So bias is priced bluntly and
-only off-support, which is a narrower claim than "invisible", and it is the quantity this study is
+optimiser, through eq. (15)'s support-aware variance inflation and a boundary-anchored isotonic
+projection, which is why §4.3.3 notes that uncertainty-aware regret can *fall* as δ widens; but the
+penalty arrives as dispersion and lost detectability, never as a signed error. So bias is priced
+bluntly and only off-support, which is a narrower claim than "invisible", and it is the quantity this study is
 built to measure. They state the limit themselves: "Our goal is not to recover a ground-truth global
-optimum" (§5), and §6 names the gap — "An important next step is a semi-synthetic benchmark with
+optimum" (§5), and §6 names the gap: "An important next step is a semi-synthetic benchmark with
 known response structure and oracle regret, which would enable direct recovery-based validation of
 the framework." This study is of that kind without being that benchmark: §6 wants one that would
 validate *their* pipeline, and what is validated here is a ridge MMM with adstock and a ten-column
@@ -641,13 +641,13 @@ counterfactual trajectory against itself rather than tethering it to the status 
 per-channel band around the status quo. The two numbers are not comparable.
 
 **Four claims in this project have turned out to be already occupied, and each was found by a single
-search run after the claim had been drafted.** The *genre* — evaluating MMM against a simulator with
-known ground truth — is Chan and Perry (2017) and Zhang and Vaver's (2017) `google/amss`. The
-*mechanism* — within-family non-identification that cross-validation cannot detect — is Dew et al.
-(2024), citing Jin et al. (2017). The *metric* — the rate at which acting on a noisy readout leaves
-the business worse off than doing nothing — is Haus (2026), and that claim was withdrawn rather than
-narrowed (D31). The *framing* — auditing an allocation by regret against a constraint-faithful
-benchmark, with the guardrail swept as the object of study — is Pathak, Jeunen and Lambert (2026),
+search run after the claim had been drafted.** The *genre*, evaluating MMM against a simulator with
+known ground truth, is Chan and Perry (2017) and Zhang and Vaver's (2017) `google/amss`. The
+*mechanism*, within-family non-identification that cross-validation cannot detect, is Dew et al.
+(2024), citing Jin et al. (2017). The *metric*, the rate at which acting on a noisy readout leaves
+the business worse off than doing nothing, is Haus (2026), and that claim was withdrawn rather than
+narrowed (D31). The *framing*, auditing an allocation by regret against a constraint-faithful
+benchmark with the guardrail swept as the object of study, is Pathak, Jeunen and Lambert (2026),
 recorded at D40. In each case the search was cheap, it was run late, and it returned prior work that
 the draft had claimed as its own. This paragraph is D41.
 
@@ -665,17 +665,17 @@ Read these as binding, not as ritual.
   worse-than-nothing rate falls from 80% to 24%. The gates still fail, but any single number quoted
   from this study must name which action space produced it.
 - **Meridian was run national, single-geo, with no control columns, at default priors.** Its baseline
-  spline is more flexible than the generating process's, and — more importantly — the geo hierarchy
+  spline is more flexible than the generating process's, and, more importantly, the geo hierarchy
   that is the package's main identifying mechanism is switched off, because this DGP produces one
   national series. That is a supported configuration but not the one Meridian is designed around.
   Read the anchor as "a Bayesian MMM with ROI priors agrees on G1", not as "Meridian as deployed
   agrees".
-- **Experiment-calibrated priors are untested.** This study's own recommendation — run an experiment
-  — enters an MMM through a tightened ROI prior. Meridian supports exactly that and it was not tried,
-  so the recommendation is argued rather than demonstrated.
+- **Experiment-calibrated priors are untested.** This study's own recommendation, to run an
+  experiment, enters an MMM through a tightened ROI prior. Meridian supports exactly that and it
+  was not tried, so the recommendation is argued rather than demonstrated.
 - **One DGP family, and now one spend *shape* beyond it.** Flighting was tested and did not rescue
-  the decision. Other plan shapes — seasonal pulsing, always-on with occasional blackouts,
-  geo-staggered launches — were not.
+  the decision. Other plan shapes (seasonal pulsing, always-on with occasional blackouts,
+  geo-staggered launches) were not.
 - **The flighted arm's achievable lift is half the baseline's** (0.54% against 1.16%), so its G4 is
   not comparable to C0's and is not compared. Only G1, G2, G3 and G5 carry across the two arms.
 - **The exploratory results lead this document's framing but are not pre-registered.** Flighting and
@@ -692,15 +692,15 @@ Read these as binding, not as ritual.
 - **The decision gates are sensitive to an optimiser convention that was not recorded at the time**
   (D28). D23's harness was never committed; a faithful re-implementation reproduces G1–G3 to the
   printed digit and lands G4 at 2.386× versus 2.355× depending on the SLSQP start seed. The
-  convention is now fixed and asserted, but the sensitivity — 1.3% relative on median regret — is the
+  convention is now fixed and asserted, but the sensitivity, 1.3% relative on median regret, is the
   honest error bar on that class of number.
-- **Eleven cells across the three exploratory harnesses fail to solve** — 2 of 800 in the sweep,
-  7 of 1000 in the bound check, 2 of 400 in the flighting check — and all are excluded, with the
+- **Eleven cells across the three exploratory harnesses fail to solve** (2 of 800 in the sweep,
+  7 of 1000 in the bound check, 2 of 400 in the flighting check), and all are excluded, with the
   adverse bound reported for the sweep (D30). Only the sweep records a `solve_failed` marker; in the
   other two the exclusions are inferable only from missing seed rows, which is a defect in those
   harnesses rather than in the numbers, and is set out in full above.
-- **The prior-art sweep has a known hole.** The pass over pre-1990 marketing science — Little,
-  Lodish, Hanssens, and the normative decision-model literature — did not complete. If the rate form
+- **The prior-art sweep has a known hole.** The pass over pre-1990 marketing science (Little,
+  Lodish, Hanssens, and the normative decision-model literature) did not complete. If the rate form
   turns out to be fifty years old, that is where it will be found.
 - **Xu, Thomadsen and Zhang (2025)** argue the ordinary bootstrap is invalid for post-optimisation
   quantities. G5's interval here is a Wilson score interval on a proportion over independent seeds,
