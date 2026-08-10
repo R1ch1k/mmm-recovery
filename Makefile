@@ -6,7 +6,7 @@
 # That is a recorded outcome (D21, D23), not an omission. Every step must leave `make test`
 # and `make lint` green.
 
-.PHONY: help install test lint reproduce plateau report
+.PHONY: help install test lint reproduce plateau nelder-mead report
 .DEFAULT_GOAL := help
 
 UV := uv run
@@ -17,6 +17,7 @@ help:
 	@echo "lint       ruff check, ruff format --check, mypy --strict"
 	@echo "reproduce  blocked by K1 -- experiment.py was never written (D21, D23)"
 	@echo "plateau    regenerate the identification plateau -> results/plateau_sweep.csv"
+	@echo "nelder-mead  start-at-the-truth diagnostic -> results/nelder_mead_diagnostic.csv"
 	@echo "report     build the self-contained dashboard -> results/dashboard.html"
 
 install:
@@ -35,6 +36,9 @@ reproduce:
 
 plateau:
 	$(UV) python -m mmm_recovery.plateau
+
+nelder-mead:
+	$(UV) python -m mmm_recovery.nelder_mead
 
 # plotly is the [report] extra: it is vendored into the HTML at build time and is never a
 # run-time dependency of the grid.
